@@ -3,7 +3,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <string> //remoof this l8r
 
 #include "AMReX.H"
 #include "GrainBoundary.H"
@@ -29,11 +28,10 @@ public:
   ///
   Read(std::string fileName)
   {
-    int i, size, theta;
-    double sigmaW;
+    int i, size;
+    double theta, sigmaW;
     amrex::Real data1, data2; 
-    std::ifstream inFile{fileName};  
-    std::string message; //remove l8r
+    std::ifstream inFile{fileName};
 
     if (!inFile){
         Util::Abort (INFO, "UNABLE TO OPEN THE FILE");
@@ -41,7 +39,7 @@ public:
 
     while (inFile >> theta >> sigmaW){
       if (theta != 360){
-        theta %= 360;
+        theta = fmod(theta, 360.0);
       }
 
       data1 = theta * pi / 180;
@@ -56,13 +54,6 @@ public:
     if(thetas[0] != 0 || std::abs(thetas[size - 1] - 2*pi) > pi / 360){
 	    Util::Abort(INFO, "FILE DOES NOT CONTAIN THETAS FROM 0 TO 2PI");
     }
-
-    //put out thetas
-    /*for(i=0; i<size; i++){
-      message += std::to_string(sigmasW[i]) + ", ";
-    }
-
-    Util::Abort(INFO, message); */
     
     //Create vector sigmas DW    
     for(i=0; i<size; i++){
