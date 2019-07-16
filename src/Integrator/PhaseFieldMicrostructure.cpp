@@ -6,7 +6,6 @@
 #include "IC/Trig.H"
 #include "Model/Solid/LinearElastic/Isotropic.H"
 #include "Numeric/Stencil.H"
-#include <iostream> //remove this later
 namespace Integrator
 {
 PhaseFieldMicrostructure::PhaseFieldMicrostructure() : Integrator()
@@ -48,12 +47,14 @@ PhaseFieldMicrostructure::PhaseFieldMicrostructure() : Integrator()
 		pp.query("tstart", anisotropy_tstart);
 		anisotropy_timestep = timestep;
 		pp.query("timestep",anisotropy_timestep);
+		pp.query("frequency", frequency);
+
 
 
 		if(gb_type=="abssin")
-			boundary = new Model::Interface::GrainBoundary::AbsSin(theta0,sigma0,sigma1);
+			boundary = new Model::Interface::GrainBoundary::AbsSin(theta0,sigma0,sigma1,frequency);
 		else if(gb_type=="sin")
-			boundary = new Model::Interface::GrainBoundary::Sin(theta0,sigma0,sigma1);
+			boundary = new Model::Interface::GrainBoundary::Sin(theta0,sigma0,sigma1, frequency);
 		else if(gb_type=="read")
 			boundary = new Model::Interface::GrainBoundary::Read(filename);
 		else
