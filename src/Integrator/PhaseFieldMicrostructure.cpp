@@ -6,6 +6,7 @@
 #include "IC/Trig.H"
 #include "Model/Solid/LinearElastic/Isotropic.H"
 #include "Numeric/Stencil.H"
+#include <iostream> //remove this later
 namespace Integrator
 {
 PhaseFieldMicrostructure::PhaseFieldMicrostructure() : Integrator()
@@ -33,7 +34,7 @@ PhaseFieldMicrostructure::PhaseFieldMicrostructure() : Integrator()
 		pp.query("max_level",max_level);
 	}
 	{
-		amrex::Real theta0,sigma0,sigma1;
+		amrex::Real theta0,sigma0,sigma1,frequency;
 
 		amrex::ParmParse pp("anisotropy"); // Phase-field model parameters
 		pp.query("on", anisotropy);
@@ -56,8 +57,7 @@ PhaseFieldMicrostructure::PhaseFieldMicrostructure() : Integrator()
 		else if(gb_type=="read")
 			boundary = new Model::Interface::GrainBoundary::Read(filename);
 		else
-			boundary = new Model::Interface::GrainBoundary::Sin(theta0,sigma0,sigma1);
-
+			boundary = new Model::Interface::GrainBoundary::Sin(theta0,sigma0,sigma1,frequency);
     
 	}
 
@@ -101,8 +101,6 @@ PhaseFieldMicrostructure::PhaseFieldMicrostructure() : Integrator()
 		else
 			Util::Abort(INFO, "No valid initial condition specified");
 	}
-	/*
-	 */
   
 	eta_new_mf.resize(maxLevel()+1);
 

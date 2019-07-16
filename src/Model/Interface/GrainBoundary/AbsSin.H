@@ -18,34 +18,35 @@ namespace GrainBoundary
 class AbsSin : public GrainBoundary
 {
 public:
-  AbsSin(amrex::Real _theta0, amrex::Real _sigma0, amrex::Real _sigma1)
+  AbsSin(amrex::Real _theta0, amrex::Real _sigma0, amrex::Real _sigma1, amrex::Real _frequency)
   {       
     theta0 = _theta0;
     sigma0 = _sigma0;
     sigma1 = _sigma1;
+    frequency = _frequency;
   };
   amrex::Real W(amrex::Real theta)
   {
     //sigma(theta)=sigma0+sigma1*fabs(sin(n*(theta-theta0)))
     //n=2:  
-    return sigma0+sigma1*fabs(sin(2*(theta-theta0)));  
+    return sigma0+sigma1*fabs(sin( (frequency / 2) *(theta-theta0)));  
     
   };
   amrex::Real DW(amrex::Real theta)
   {
     //sigma'(theta)=(n*sigma1*sin(n*(theta-theta0))*cos(n*(theta-theta0)))/fabs(sin(n*(theta-theta0)))
     //n=2:
-    return (2*sigma1*sin(2*(theta-theta0))*cos(2*(theta-theta0)))/fabs(sin(2*(theta-theta0)));
+    return ( (frequency / 2) *sigma1*sin( (frequency / 2) *(theta-theta0))*cos( (frequency / 2) *(theta-theta0)))/fabs(sin( (frequency / 2) *(theta-theta0)));
   };
   amrex::Real DDW(amrex::Real theta)
   {
     //sigma''(theta)=-n^2*sigma1*fabs(sin(n*(theta-theta0)))
     //n=2:
-    return -4*sigma1*fabs(sin(2*(theta-theta0)));
+    return -1 * (frequency * frequency / 4) *sigma1*fabs(sin( (frequency / 2) *(theta-theta0)));
   };
  
 private:
-  amrex::Real theta0, sigma0, sigma1;
+  amrex::Real theta0, sigma0, sigma1, frequency;
 };
 }
 }

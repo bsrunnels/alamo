@@ -3,11 +3,12 @@
 
 #include <iostream>
 #include <fstream>
+#include <string> //remoof this l8r
 
 #include "AMReX.H"
 #include "GrainBoundary.H"
 
-#define PI 3.14159265 
+#define pi 3.14159265 
 
 namespace Model
 {
@@ -26,44 +27,42 @@ public:
   ///
   /// \f[ \int_0^1x^2dx = \frac{1}{3} \f]
   ///
-  Read(std::string fileName) ///<[in] Name of file containing data
+  Read(std::string fileName)
   {
-    //Define
-    int i;
-    std::string line;
+    int i, size, theta;
+    double sigmaW;
     amrex::Real data1, data2; 
-    std::ifstream inFile;  
+    std::ifstream inFile{fileName};  
+    std::string message; //remove l8r
 
-    //Open file
-    inFile.open(fileName);       
-    
-    //Error Check
-    if(inFile.fail()){
-	    Util::Abort (INFO, "UNABLE TO OPEN THE FILE");
+    if (!inFile){
+        Util::Abort (INFO, "UNABLE TO OPEN THE FILE");
     }
 
-    //Read the file and fill out the vectors thetas and sigmasW with the read values
-    while(getline(inFile, line)){           
-      int pos = line.find_first_of(' ');
-      std::string second=line.substr(pos+1);
-      std::string first=line.substr(0, pos);
-      
-      data1=stod(first);
-      data2=stod(second);
+    while (inFile >> theta >> sigmaW){
+      if (theta != 360){
+        theta %= 360;
+      }
+
+      data1 = theta * pi / 180;
+      data2 = sigmaW;
       
       thetas.push_back(data1);
       sigmasW.push_back(data2);
     }
 
-    size= thetas.size();
+    size = thetas.size();
 
-    //Close file
-    inFile.close();
-
-    //Check that the file we have read contains the whole range of thetas (from 0 to 2pi)
-    if((thetas[size-1]+(thetas[1]-thetas[0]))<2*pi){
-	    Util::Abort(INFO, "FILE DID NOT CONTAIN THE WHOLE RANGES OF THETAS (FROM 0 TO 2PI)");
+    if(thetas[0] != 0 || std::abs(thetas[size - 1] - 2*pi) > pi / 360){
+	    Util::Abort(INFO, "FILE DOES NOT CONTAIN THETAS FROM 0 TO 2PI");
     }
+
+    //put out thetas
+    /*for(i=0; i<size; i++){
+      message += std::to_string(sigmasW[i]) + ", ";
+    }
+
+    Util::Abort(INFO, message); */
     
     //Create vector sigmas DW    
     for(i=0; i<size; i++){

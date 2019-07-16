@@ -38,3 +38,4 @@ amrex
 amrex.build.log
 .diff.html
 eigen3
+tests
