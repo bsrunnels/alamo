@@ -76,11 +76,11 @@ public:
     }
 
     //remove this later
-    std::string message;
-    for (i = 0; i < size; i++){
-      message += std::to_string(sigmasDDW[i]) + ", ";
-    }
-    Util::Abort(INFO, message);
+    //std::string message;
+    //for (i = 0; i < size; i++){
+    //  message += std::to_string(sigmasDDW[i]) + ", ";
+    //}
+    //Util::Abort(INFO, message);
 
     //Print Thetas Sigmas Sigmas' and Sigmas''
   };
