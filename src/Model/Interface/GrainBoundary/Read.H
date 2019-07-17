@@ -51,8 +51,8 @@ public:
 
     size = thetas.size();
 
-    if(thetas[0] != 0 || std::abs(thetas[size - 1] - 2*pi) > pi / 360){
-	    Util::Abort(INFO, "FILE DOES NOT CONTAIN THETAS FROM 0 TO 2PI");
+    if((thetas[size-1]+(thetas[1]-thetas[0]))<2*pi){
+	    Util::Abort(INFO, "FILE DOES NOT CONTAIN THE WHOLE RANGE OF THETAS FROM 0 TO 2PI");
     }
     
     //Create vector sigmas DW    
