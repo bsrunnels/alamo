@@ -59,7 +59,7 @@ PhaseFieldMicrostructure::PhaseFieldMicrostructure() : Integrator()
 			boundary = new Model::Interface::GrainBoundary::Read(filename);
 		else
 			boundary = new Model::Interface::GrainBoundary::Sin(theta0,sigma0,sigma1,frequency);
-    
+		boundary2 = new Model::Interface::GrainBoundary::AbsSin(theta0,sigma0,sigma1,4);
 	}
 
 	{
@@ -293,6 +293,16 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 							DDeta(0,1) = (eta(i+1,j+1,k,m) - eta(i-1,j+1,k,m) - eta(i+1,j-1,k,m) + eta(i-1,j-1,k,m))/(4.*DX[0]*DX[1]); // replaces grad12
 
  							Set::Scalar Theta = atan2(Deta(1),Deta(0));
+							 
+							Set::Scalar w_exact = boundary2->W(Theta), w_read = boundary->W(Theta);
+							Set::Scalar dw_exact = boundary2->DW(Theta), dw_read = boundary->DW(Theta);
+							Set::Scalar ddw_exact = boundary2->DDW(Theta), ddw_read = boundary->DDW(Theta);
+
+							if (fabs(w_exact - w_read) > 1E-2)     Util::Warning(INFO,Theta," ",w_exact, " ", w_read);
+							if (fabs(dw_exact - dw_read) > 1E-2)   Util::Warning(INFO,Theta," ",dw_exact, " ", dw_read);
+							if (fabs(ddw_exact - ddw_read) > 1E-2) Util::Warning(INFO,Theta," ",ddw_exact, " ", ddw_read);
+							
+							
 							Set::Scalar Kappa = l_gb*0.75*boundary->W(Theta);
  							Set::Scalar DKappa = l_gb*0.75*boundary->DW(Theta);
 							Set::Scalar DDKappa = l_gb*0.75*boundary->DDW(Theta);
