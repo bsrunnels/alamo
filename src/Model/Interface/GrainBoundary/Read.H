@@ -29,7 +29,7 @@ public:
   Read(std::string fileName)
   {
     int i, size;
-    double theta, sigmaW;
+    double theta, sigmaW, res;
     amrex::Real data1, data2; 
     std::ifstream inFile{fileName};
 
@@ -50,9 +50,10 @@ public:
     }
 
     size = thetas.size();
+    res = thetas[1]-thetas[0];
 
-    if((thetas[size-1]+(thetas[1]-thetas[0]))<2*pi){
-	    Util::Abort(INFO, "FILE DOES NOT CONTAIN THE WHOLE RANGE OF THETAS FROM 0 TO 2PI");
+    if((thetas[size-1]+res) < (2*pi - res / 2)){
+	    Util::Abort(INFO, std::to_string(thetas[size-1]+res) + " vs " + std::to_string(2*pi + res / 2) + ", FILE DOES NOT CONTAIN THE WHOLE RANGE OF THETAS FROM 0 TO 2PI");
     }
     
     //Create vector sigmas DW    
@@ -74,13 +75,6 @@ public:
 	sigmasDDW.push_back((sigmasDW[i+1]-sigmasDW[i])/(thetas[i+1]-thetas[i]));
       }
     }
-
-    //remove this later
-    /*std::string message;
-    for (i = 0; i < size; i++){
-      message += std::to_string(sigmasDDW[i]) + ", ";
-    }
-    Util::Abort(INFO, message); */
 
     //Print Thetas Sigmas Sigmas' and Sigmas''
   };
