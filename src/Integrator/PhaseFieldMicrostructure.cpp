@@ -6,6 +6,10 @@
 #include "IC/Trig.H"
 #include "Model/Solid/LinearElastic/Isotropic.H"
 #include "Numeric/Stencil.H"
+#include <iostream>
+#include <string>
+
+
 namespace Integrator
 {
 PhaseFieldMicrostructure::PhaseFieldMicrostructure() : Integrator()
@@ -59,7 +63,7 @@ PhaseFieldMicrostructure::PhaseFieldMicrostructure() : Integrator()
 			boundary = new Model::Interface::GrainBoundary::Read(filename);
 		else
 			boundary = new Model::Interface::GrainBoundary::Sin(theta0,sigma0,sigma1,frequency);
-		boundary2 = new Model::Interface::GrainBoundary::AbsSin(theta0,sigma0,sigma1,4);
+		//boundary2 = new Model::Interface::GrainBoundary::Sin(theta0,sigma0,sigma1,frequency);
 	}
 
 	{
@@ -293,14 +297,16 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 							DDeta(0,1) = (eta(i+1,j+1,k,m) - eta(i-1,j+1,k,m) - eta(i+1,j-1,k,m) + eta(i-1,j-1,k,m))/(4.*DX[0]*DX[1]); // replaces grad12
 
  							Set::Scalar Theta = atan2(Deta(1),Deta(0));
+
+                        // compare exact -alamo- boundary object energies with read boundary object
 							 
-							Set::Scalar w_exact = boundary2->W(Theta), w_read = boundary->W(Theta);
+							/*Set::Scalar w_exact = boundary2->W(Theta), w_read = boundary->W(Theta);
 							Set::Scalar dw_exact = boundary2->DW(Theta), dw_read = boundary->DW(Theta);
 							Set::Scalar ddw_exact = boundary2->DDW(Theta), ddw_read = boundary->DDW(Theta);
 
-							if (fabs(w_exact - w_read) > 1E-2)     Util::Warning(INFO,Theta," ",w_exact, " ", w_read);
-							if (fabs(dw_exact - dw_read) > 1E-2)   Util::Warning(INFO,Theta," ",dw_exact, " ", dw_read);
-							if (fabs(ddw_exact - ddw_read) > 1E-2) Util::Warning(INFO,Theta," ",ddw_exact, " ", ddw_read);
+							if (fabs(w_exact - w_read) > 1E-2)     Util::Warning(INFO,Theta*180/pi," ",w_exact, " ", w_read);
+							if (fabs(dw_exact - dw_read) > 1E-2)   Util::Warning(INFO,Theta*180/pi," ",dw_exact, " ", dw_read);
+							if (fabs(ddw_exact - ddw_read) > 1E-2) Util::Warning(INFO,Theta*180/pi," ",ddw_exact, " ", ddw_read); */
 							
 							
 							Set::Scalar Kappa = l_gb*0.75*boundary->W(Theta);
@@ -330,6 +336,22 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
  								+grad1222*(4.0*sinTheta*cosTheta*cosTheta*cosTheta)
  								+grad2222*(cosTheta*cosTheta*cosTheta*cosTheta);
 
+							Set::Scalar w_read = boundary->W(Theta);
+							Set::Scalar dw_read = boundary->DW(Theta);
+							Set::Scalar ddw_read = boundary->DDW(Theta);
+							std::string message;
+							message = ("curvature term is nan \n" + std::to_string(grad1111)
+								+ "\n" + std::to_string(grad1112)
+								+ "\n" + std::to_string(grad1122)
+								+ "\n" + std::to_string(grad1222)
+								+ "\n" + std::to_string(grad2222)
+								+ "\n nan at " + std::to_string(Theta*180/pi)
+								+ "\n W" + std::to_string(w_read)
+								+ "\n DW" + std::to_string(dw_read)
+								+ "\n DDW" + std::to_string(ddw_read)
+							);
+							if (std::isnan(Curvature_term)) Util::Abort(INFO,message);
+
  							amrex::Real W =
  								Mu*(eta(i,j,k,m)*eta(i,j,k,m) - 1.0 + 2.0*gamma*sum_of_squares)*eta(i,j,k,m);
 							if (std::isnan(W)) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
@@ -342,7 +364,24 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 			
 			
  							etanew(i,j,k,m) = eta(i,j,k,m) - M*dt*(W - (Boundary_term) + beta*(Curvature_term));
-							if (std::isnan(etanew(i,j,k,m))) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
+							//if (std::isnan(etanew(i,j,k,m))) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
+
+							//mahi - remove later
+
+							/* std::string message;
+							message = ("curvature term is nan \n" + std::to_string(grad1111)
+								+ "\n" + std::to_string(grad1112)
+								+ "\n" + std::to_string(grad1122)
+								+ "\n" + std::to_string(grad1222)
+								+ "\n" + std::to_string(grad2222)
+								+ "\n nan at " + std::to_string(Theta*180/pi)
+								+ "\n W" + std::to_string(w_read)
+								+ "\n DW" + std::to_string(dw_read)
+								+ "\n DDW" + std::to_string(ddw_read)
+							);
+							if (std::isnan(etanew(i,j,k,m))) Util::Abort(INFO,message);*/
+
+
 #else
  							Util::Abort(INFO, "Anisotropy is enabled but works in 2D ONLY");
 #endif
@@ -354,6 +393,8 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
  								M*dt*(mu*(eta(i,j,k,m)*eta(i,j,k,m) - 1.0 + 2.0*gamma*sum_of_squares)*eta(i,j,k,m)
  								      - kappa*laplacian);
  						}
+							
+							// 
 
  						//
  						// SYNTHETIC DRIVING FORCE
