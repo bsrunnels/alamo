@@ -1,9 +1,9 @@
 timestep = 0.1
 stop_time = 50
 
-plot_file = tests/PerturbedInterface/read_tests/sine_fine_res_test
+plot_file = tests/PerturbedInterface/random_tests/line_w_deg_and_Ws
 
-amr.plot_int = 1000
+amr.plot_int = 100
 amr.max_level = 2
 #amr.n_cell = 32 4
 amr.n_cell = 64 64 64
@@ -33,7 +33,7 @@ pf.l_gb=0.1
 pf.sigma0=0.075
 
 anisotropy.on=1
-anisotropy.timestep=0.001
+anisotropy.timestep=0.005
 anisotropy.tstart= 1.
 anisotropy.theta0= 0
 anisotropy.sigma0= 0.1
@@ -42,7 +42,7 @@ anisotropy.frequency= 4
 anisotropy.beta= 0.00001
 anisotropy.damp=1.0
 anisotropy.gb_type="read"
-anisotropy.filename= tests/PerturbedInterface/sine_fine_res.txt
+anisotropy.filename= tests/PerturbedInterface/line.txt
 
 elastic.on=0
 elastic.max_iter = 20
