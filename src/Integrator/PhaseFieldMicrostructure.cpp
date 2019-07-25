@@ -9,7 +9,7 @@
 #include <iostream>
 #include <string>
 
-#define PI 3.14159265 
+const float pi 3.1415926;
 
 namespace Integrator
 {
@@ -45,7 +45,7 @@ PhaseFieldMicrostructure::PhaseFieldMicrostructure() : Integrator()
 		pp.query("theta0", theta0);
 		pp.query("filename", filename);
 		pp.query("gb_type", gb_type);
-		theta0 *= 0.01745329251; // convert degrees into radians
+		theta0 *= (pi / 180); // convert degrees into radians
 		pp.query("sigma0", sigma0);
 		pp.query("sigma1", sigma1);
 		pp.query("beta", beta);
