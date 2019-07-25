@@ -356,15 +356,15 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 							Set::Scalar ddw_read = boundary->DDW(Theta);
 							std::string message;
 							message = ("curvature term is nan \n" + std::to_string(grad1111)
-								+ "\n" + std::to_string(grad1112)
-								+ "\n" + std::to_string(grad1122)
-								+ "\n" + std::to_string(grad1222)
-								+ "\n" + std::to_string(grad2222)
+								+ "\n " + std::to_string(grad1112)
+								+ "\n " + std::to_string(grad1122)
+								+ "\n " + std::to_string(grad1222)
+								+ "\n " + std::to_string(grad2222)
 								+ "\n nan at " + std::to_string(Theta*180/pi)
-								+ "\n W" + std::to_string(w_read)
-								+ "\n DW" + std::to_string(dw_read)
-								+ "\n DDW" + std::to_string(ddw_read)
-								+ "\n boundary_term" + std::to_string(Boundary_term)
+								+ "\n W " + std::to_string(w_read)
+								+ "\n DW " + std::to_string(dw_read)
+								+ "\n DDW " + std::to_string(ddw_read)
+								+ "\n boundary_term " + std::to_string(Boundary_term)
 							);
 							if (std::isnan(etanew(i,j,k,m))) Util::Abort(INFO,message);
 
