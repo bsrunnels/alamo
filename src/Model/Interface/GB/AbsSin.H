@@ -1,43 +1,30 @@
-#ifndef MODEL_INTERFACE_GB_ABSSIN_H
-#define MODEL_INTERFACE_GB_ABSSIN_H
+#ifndef MODEL_INTERFACE_GRAINBOUNDARY_ABSSIN_H
+#define MODEL_INTERFACE_GRAINBOUNDARY_ABSSIN_H
 
 #include <iostream>
 #include <fstream>
 
 #include "AMReX.H"
-#include "GB.H"
-#include "Set/Set.H"
-#include "Util/Util.H"
+#include "GrainBoundary.H"
+
+#define PI 3.14159265 
 
 namespace Model
 {
 namespace Interface
 {
-namespace GB
+namespace GrainBoundary
 {
-class AbsSin : public GB
+class AbsSin : public GrainBoundary
 {
 public:
-  AbsSin()
+  AbsSin(amrex::Real _theta0, amrex::Real _sigma0, amrex::Real _sigma1, amrex::Real _frequency)
   {       
+    theta0 = _theta0;
+    sigma0 = _sigma0;
+    sigma1 = _sigma1;
+    frequency = _frequency;
   };
-  AbsSin(amrex::Real _theta0, amrex::Real _sigma0, amrex::Real _sigma1)
-  {       
-    Define(_theta0,_sigma0,_sigma1);
-  };
-	void Define(amrex::Real _theta0, amrex::Real _sigma0, amrex::Real _sigma1)
-	{
-		theta0 = _theta0;
-		sigma0 = _sigma0;
-		sigma1 = _sigma1;
-        frequency = _frequency;
-	};
-	void Randomize()
-	{
-		theta0 = Util::Random()*Set::Constant::Pi;
-		sigma0 = Util::Random();
-		sigma1 = Util::Random();
-	};
   amrex::Real W(amrex::Real theta)
   {
     //sigma(theta)=sigma0+sigma1*fabs(sin(n*(theta-theta0)))
@@ -59,7 +46,7 @@ public:
   };
  
 private:
-  amrex::Real theta0 = NAN, sigma0 = NAN, sigma1 = NAN;
+  amrex::Real theta0, sigma0, sigma1, frequency;
 };
 }
 }

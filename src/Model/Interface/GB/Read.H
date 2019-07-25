@@ -1,11 +1,11 @@
-#ifndef MODEL_INTERFACE_GB_READ_H
-#define MODEL_INTERFACE_GB_READ_H
+#ifndef MODEL_INTERFACE_GRAINBOUNDARY_READ_H
+#define MODEL_INTERFACE_GRAINBOUNDARY_READ_H
 
 #include <iostream>
 #include <fstream>
 
 #include "AMReX.H"
-#include "GB.H"
+#include "GrainBoundary.H"
 
 #define pi 3.14159265 
 
@@ -13,11 +13,11 @@ namespace Model
 {
 namespace Interface
 {
-namespace GB
+namespace GrainBoundary
 {
 /// Reads the data from a file and computes energies and its derivates
 ///
-class Read : public GB
+class Read : public GrainBoundary
 {
 public:
   /// \brief Read in data
