@@ -60,7 +60,7 @@ PhaseFieldMicrostructure::PhaseFieldMicrostructure() : Integrator()
 		else if(gb_type=="sin")
 			boundary = new Model::Interface::GrainBoundary::Sin(theta0,sigma0,sigma1, frequency);
 		else if(gb_type=="read")
-			boundary = new Model::Interface::GrainBoundary::Read(filename);
+			boundary = new Model::Interface::GB::Read(filename);
 		else
 			boundary = new Model::Interface::GrainBoundary::Sin(theta0,sigma0,sigma1,frequency);
 		//boundary2 = new Model::Interface::GrainBoundary::Sin(theta0,sigma0,sigma1,frequency);
