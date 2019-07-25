@@ -9,7 +9,7 @@
 #include <iostream>
 #include <string>
 
-const float pi 3.1415926;
+#define PI 3.1415926
 
 namespace Integrator
 {
@@ -45,7 +45,7 @@ PhaseFieldMicrostructure::PhaseFieldMicrostructure() : Integrator()
 		pp.query("theta0", theta0);
 		pp.query("filename", filename);
 		pp.query("gb_type", gb_type);
-		theta0 *= (pi / 180); // convert degrees into radians
+		theta0 *= (PI / 180); // convert degrees into radians
 		pp.query("sigma0", sigma0);
 		pp.query("sigma1", sigma1);
 		pp.query("beta", beta);
@@ -308,9 +308,9 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 							Set::Scalar dw_exact = boundary2->DW(Theta), dw_read = boundary->DW(Theta);
 							Set::Scalar ddw_exact = boundary2->DDW(Theta), ddw_read = boundary->DDW(Theta);
 
-							if (fabs(w_exact - w_read) > 1E-2)     Util::Warning(INFO,Theta*180/pi," ",w_exact, " ", w_read);
-							if (fabs(dw_exact - dw_read) > 1E-2)   Util::Warning(INFO,Theta*180/pi," ",dw_exact, " ", dw_read);
-							if (fabs(ddw_exact - ddw_read) > 1E-2) Util::Warning(INFO,Theta*180/pi," ",ddw_exact, " ", ddw_read); */
+							if (fabs(w_exact - w_read) > 1E-2)     Util::Warning(INFO,Theta*180/PI," ",w_exact, " ", w_read);
+							if (fabs(dw_exact - dw_read) > 1E-2)   Util::Warning(INFO,Theta*180/PI," ",dw_exact, " ", dw_read);
+							if (fabs(ddw_exact - ddw_read) > 1E-2) Util::Warning(INFO,Theta*180/PI," ",ddw_exact, " ", ddw_read); */
 							
 							
 							Set::Scalar Kappa = l_gb*0.75*boundary->W(Theta);
@@ -364,7 +364,7 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 								+ "\n " + std::to_string(grad1122)
 								+ "\n " + std::to_string(grad1222)
 								+ "\n " + std::to_string(grad2222)
-								+ "\n nan at " + std::to_string(Theta*180/pi)
+								+ "\n nan at " + std::to_string(Theta*180/PI)
 								+ "\n W " + std::to_string(w_read)
 								+ "\n DW " + std::to_string(dw_read)
 								+ "\n DDW " + std::to_string(ddw_read)
