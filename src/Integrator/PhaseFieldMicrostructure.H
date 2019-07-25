@@ -96,7 +96,7 @@ private:
 
 	std::string ic_type, gb_type, filename;
 
-	Model::Interface::GrainBoundary::GrainBoundary *boundary, *boundary2;
+	Model::Interface::GB::GB *boundary, *boundary2;
 
 	IC::IC *ic;
 

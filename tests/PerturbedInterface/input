@@ -1,9 +1,9 @@
 timestep = 0.1
 stop_time = 50
 
-plot_file = tests/PerturbedInterface/random_tests/line_B_0_lots_info
+plot_file = tests/PerturbedInterface/random_tests/line_beta_0
 
-amr.plot_int = 100
+amr.plot_int = 1000
 amr.max_level = 2
 #amr.n_cell = 32 4
 amr.n_cell = 64 64 64
@@ -33,7 +33,7 @@ pf.l_gb=0.1
 pf.sigma0=0.075
 
 anisotropy.on=1
-anisotropy.timestep=1
+anisotropy.timestep=0.001
 anisotropy.tstart= 1.
 anisotropy.theta0= 0
 anisotropy.sigma0= 0.1

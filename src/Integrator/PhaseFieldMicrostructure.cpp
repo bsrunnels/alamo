@@ -56,14 +56,16 @@ PhaseFieldMicrostructure::PhaseFieldMicrostructure() : Integrator()
 
 
 		if(gb_type=="abssin")
-			boundary = new Model::Interface::GrainBoundary::AbsSin(theta0,sigma0,sigma1,frequency);
+			boundary = new Model::Interface::GB::AbsSin(theta0,sigma0,sigma1,frequency);
 		else if(gb_type=="sin")
-			boundary = new Model::Interface::GrainBoundary::Sin(theta0,sigma0,sigma1, frequency);
+			boundary = new Model::Interface::GB::Sin(theta0,sigma0,sigma1,frequency);
 		else if(gb_type=="read")
 			boundary = new Model::Interface::GB::Read(filename);
 		else
-			boundary = new Model::Interface::GrainBoundary::Sin(theta0,sigma0,sigma1,frequency);
-		//boundary2 = new Model::Interface::GrainBoundary::Sin(theta0,sigma0,sigma1,frequency);
+			boundary = new Model::Interface::GB::Sin(theta0,sigma0,sigma1,frequency);
+		//boundary2 = new Model::Interface::GB::Sin(theta0,sigma0,sigma1,frequency);
+
+    
 	}
 
 	{
@@ -106,6 +108,7 @@ PhaseFieldMicrostructure::PhaseFieldMicrostructure() : Integrator()
 		else
 			Util::Abort(INFO, "No valid initial condition specified");
 	}
+
   
 	eta_new_mf.resize(maxLevel()+1);
 
@@ -381,8 +384,7 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
  								M*dt*(mu*(eta(i,j,k,m)*eta(i,j,k,m) - 1.0 + 2.0*gamma*sum_of_squares)*eta(i,j,k,m)
  								      - kappa*laplacian);
  						}
-							
-							// 
+
 
  						//
  						// SYNTHETIC DRIVING FORCE
