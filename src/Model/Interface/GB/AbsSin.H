@@ -30,6 +30,7 @@ public:
 		theta0 = _theta0;
 		sigma0 = _sigma0;
 		sigma1 = _sigma1;
+        frequency = _frequency;
 	};
 	void Randomize()
 	{
