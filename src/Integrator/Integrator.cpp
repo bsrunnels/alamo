@@ -28,6 +28,7 @@ Integrator::Integrator ()
 		ParmParse pp("amr"); // AMR specific parameters
 		pp.query("regrid_int", regrid_int);     // ALL processors
 		pp.query("plot_int", plot_int);         // ALL processors
+		pp.query("thermo_int", thermo.interval);         // ALL processors
 		pp.query("plot_dt", plot_dt);         // ALL processors
 		pp.query("plot_file", plot_file);       // IO Processor only
 
