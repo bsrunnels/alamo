@@ -9,6 +9,7 @@
 #include <iostream>
 #include <string>
 
+#define PI 3.14159265 
 
 namespace Integrator
 {

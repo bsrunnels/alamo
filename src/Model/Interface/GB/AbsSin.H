@@ -39,7 +39,7 @@ public:
 		theta0 = Util::Random()*Set::Constant::Pi;
 		sigma0 = Util::Random();
 		sigma1 = Util::Random();
-		frequency = 4
+		frequency = 4;
 	};
   amrex::Real W(amrex::Real theta)
   {
