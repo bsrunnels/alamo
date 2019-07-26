@@ -60,11 +60,7 @@ Integrator::Integrator ()
 		pp.query("int", thermo.interval);     // ALL processors
 		pp.query("plot_int", thermo.plot_int);         // ALL processors
 		pp.query("plot_dt", thermo.plot_dt);         // ALL processors
-
-		//mahi - remove later (ask prof. runnels about this part)
 		if (thermo.plot_dt < 0){thermo.plot_dt *= -1;};
-		// Util::Abort(INFO, thermo.plot_dt);
-
 		Util::Message(INFO,thermo.plot_int," ",thermo.plot_dt);
 	}
 
@@ -757,54 +753,23 @@ Integrator::IntegrateVariables (Real time, int step)
 		}
 	}
 
-	//mahi - remove later
-	//if (true)
-	//Util::Abort (INFO, "boop registered"); THIS BOOP WAS REGISTERED
-
-	//mahi - remove later
-	//if (ParallelDescriptor::IOProcessor()){
-	//	Util::Abort (INFO, "boop registered");
-	//}
-
-	//mahi - remove later
-	/* if (thermo.plot_int > 0 && step % thermo.plot_int == 0){
-		Util::Abort (INFO, "boop 1 registered");
-	}
-	if (thermo.plot_dt > 0.0 && std::fabs(std::remainder(time,thermo.plot_dt)) < 0.5*dt[0]){
-		Util::Abort (INFO, "boop 2 registered");
-	}
-	Util::Abort (INFO, thermo.plot_dt); // is this supposed to be negative? */
-
+	
 	if ( ParallelDescriptor::IOProcessor() &&
 		 (
 			 (thermo.plot_int > 0 && step % thermo.plot_int == 0) ||
 			 (thermo.plot_dt > 0.0 && std::fabs(std::remainder(time,thermo.plot_dt)) < 0.5*dt[0])
 		 ))
 	{
-		//mahi - remove later
-		//if (true)
-		//Util::Abort (INFO, "boop registered");
-		
 		std::ofstream outfile;
 		if (step==0)
 		{
 			outfile.open(plot_file+"/thermo.dat",std::ios_base::out);
-
-			//mahi - remove later
-			//if (true)
-			//Util::Abort (INFO, "top boop registered");
-
 			outfile << "time";
 			for (int i = 0; i < thermo.number; i++) 
 				outfile << "\t" << thermo.names[i];
 			outfile << std::endl;
 		}
 		else outfile.open(plot_file+"/thermo.dat",std::ios_base::app);
-		
-			//mahi - remove later
-			//if (true)
-			//Util::Abort (INFO, "bottom boop registered");
-
 		outfile << time;
 		for (int i = 0; i < thermo.number; i++)
 			outfile << "\t" << *thermo.vars[i];

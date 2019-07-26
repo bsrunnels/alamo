@@ -1,7 +1,7 @@
 timestep = 0.1
 stop_time = 50
 
-plot_file = tests/PerturbedInterface/thermo_dat_integrator_cpp/line_beta_0_SeeIfThermoDat
+plot_file = tests/PerturbedInterface/random_tests/line_beta_0_w_gb_energy
 
 amr.plot_int = 1000
 amr.thermo_int = 1000
