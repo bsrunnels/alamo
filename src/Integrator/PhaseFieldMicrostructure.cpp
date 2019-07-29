@@ -356,6 +356,9 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
  								eta(i,j,k,m) -
  								M*dt*(mu*(eta(i,j,k,m)*eta(i,j,k,m) - 1.0 + 2.0*gamma*sum_of_squares)*eta(i,j,k,m)
  								      - kappa*laplacian); //isotropic resp */
+
+							Util::Abort(INFO,"beta: ",beta);
+
 							etanew(i,j,k,m) =
  								eta(i,j,k,m) -
  								M*dt*(Mu*(eta(i,j,k,m)*eta(i,j,k,m) - 1.0 + 2.0*gamma*sum_of_squares)*eta(i,j,k,m)
