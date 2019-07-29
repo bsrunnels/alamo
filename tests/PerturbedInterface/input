@@ -1,7 +1,7 @@
 timestep = 0.1
 stop_time = 50
 
-plot_file = tests/PerturbedInterface/comp_w_isotropic/replace_Curvature_term_2
+plot_file = tests/PerturbedInterface/comp_w_isotropic/replace_Boundary_term_2
 
 amr.plot_int = 1000
 amr.thermo_int = 1000
