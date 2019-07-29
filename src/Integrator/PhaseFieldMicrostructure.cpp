@@ -357,15 +357,19 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
  								M*dt*(mu*(eta(i,j,k,m)*eta(i,j,k,m) - 1.0 + 2.0*gamma*sum_of_squares)*eta(i,j,k,m)
  								      - kappa*laplacian); //isotropic resp */
 
-							Util::Abort(INFO,"beta: ",beta);
 
 							etanew(i,j,k,m) =
  								eta(i,j,k,m) -
  								M*dt*(Mu*(eta(i,j,k,m)*eta(i,j,k,m) - 1.0 + 2.0*gamma*sum_of_squares)*eta(i,j,k,m)
  								      -(Kappa*laplacian +
  								DKappa*(cos(2.0*Theta)*DDeta(0,1) + 0.5*sin(2.0*Theta)*(DDeta(1,1) - DDeta(0,0)))
- 								+ 0.5*DDKappa*(sinTheta*sinTheta*DDeta(0,0) - 2.*sinTheta*cosTheta*DDeta(0,1) + cosTheta*cosTheta*DDeta(1,1))));
-							  //replace both, no curvature term (shouldn't affect)
+ 								+ 0.5*DDKappa*(sinTheta*sinTheta*DDeta(0,0) - 2.*sinTheta*cosTheta*DDeta(0,1) + cosTheta*cosTheta*DDeta(1,1))
+								 + beta * (grad1111*(sinTheta*sinTheta*sinTheta*sinTheta)
+ 									+grad1112*(4.0*sinTheta*sinTheta*sinTheta*cosTheta)
+ 									+grad1122*(6.0*sinTheta*sinTheta*cosTheta*cosTheta)
+ 									+grad1222*(4.0*sinTheta*cosTheta*cosTheta*cosTheta)
+ 									+grad2222*(cosTheta*cosTheta*cosTheta*cosTheta))));
+							  //replace both, w curvature term (shouldn't affect..) 
 							if (std::isnan(etanew(i,j,k,m))) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
 
 						// mahi - remove later
@@ -377,7 +381,7 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 								+ "\n " + std::to_string(grad1112)
 								+ "\n " + std::to_string(grad1122)
 								+ "\n " + std::to_string(grad1222)
-								+ "\n " + std::to_string(grad2222)
+								+ "\n " + std::to_string(grad2222)							Util::Abort(INFO,"beta: ",beta);
 								+ "\n nan at " + std::to_string(Theta*180/PI)
 								+ "\n W " + std::to_string(w_read)
 								+ "\n DW " + std::to_string(dw_read)
