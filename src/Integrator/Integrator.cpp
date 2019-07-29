@@ -60,7 +60,7 @@ Integrator::Integrator ()
 		pp.query("int", thermo.interval);     // ALL processors
 		pp.query("plot_int", thermo.plot_int);         // ALL processors
 		pp.query("plot_dt", thermo.plot_dt);         // ALL processors
-		if (thermo.plot_dt < 0){thermo.plot_dt *= -1;};
+		if (thermo.plot_dt < 0){thermo.plot_dt *= -1;};  // make sure amr.thermo.plot_dt is positive
 		Util::Message(INFO,thermo.plot_int," ",thermo.plot_dt);
 	}
 
