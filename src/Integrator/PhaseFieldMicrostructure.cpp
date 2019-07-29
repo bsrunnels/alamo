@@ -351,13 +351,15 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 							if (std::isnan(Boundary_term)) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
 			
 			
- 							etanew(i,j,k,m) = eta(i,j,k,m) - M*dt*(W - (Boundary_term) + beta*(Curvature_term));
-							//etanew(i,j,k,m) = eta(i,j,k,m) - M*dt*(mu*(eta(i,j,k,m)*eta(i,j,k,m) 
-							//  - 1.0 + 2.0*gamma*sum_of_squares)*eta(i,j,k,m)  - kappa*laplacian);    // isotropic response
-							//if (std::isnan(etanew(i,j,k,m))) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
+ 							//etanew(i,j,k,m) = eta(i,j,k,m) - M*dt*(W - (Boundary_term) + beta*(Curvature_term));
+							etanew(i,j,k,m) =
+ 								eta(i,j,k,m) -
+ 								M*dt*(mu*(eta(i,j,k,m)*eta(i,j,k,m) - 1.0 + 2.0*gamma*sum_of_squares)*eta(i,j,k,m)
+ 								      - kappa*laplacian);
+							if (std::isnan(etanew(i,j,k,m))) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
 
 						// mahi - remove later
-							Set::Scalar w_read = boundary->W(Theta);
+							/*Set::Scalar w_read = boundary->W(Theta);
 							Set::Scalar dw_read = boundary->DW(Theta);
 							Set::Scalar ddw_read = boundary->DDW(Theta);
 							std::string message;
@@ -372,7 +374,7 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 								+ "\n DDW " + std::to_string(ddw_read)
 								+ "\n boundary_term " + std::to_string(Boundary_term)
 							);
-							if (std::isnan(etanew(i,j,k,m))) Util::Abort(INFO,message);
+							if (std::isnan(etanew(i,j,k,m))) Util::Abort(INFO,message);*/
 
 
 
