@@ -1,7 +1,7 @@
 timestep = 0.1
 stop_time = 50
 
-plot_file = tests/PerturbedInterface/comp_w_isotropic/replaceW
+plot_file = tests/PerturbedInterface/comp_w_isotropic/isotropic_replacement
 
 amr.plot_int = 1000
 amr.thermo_int = 1000
@@ -33,7 +33,7 @@ pf.gamma = 1.0
 pf.l_gb=0.1
 pf.sigma0=0.075
 
-anisotropy.on=0
+anisotropy.on=1
 anisotropy.timestep=0.001
 anisotropy.tstart= 1.
 anisotropy.theta0= 0
