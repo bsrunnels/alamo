@@ -353,7 +353,7 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 			
  							etanew(i,j,k,m) = eta(i,j,k,m) - M*dt*(W - (Boundary_term) + beta*(Curvature_term));
 							//etanew(i,j,k,m) = eta(i,j,k,m) - M*dt*(mu*(eta(i,j,k,m)*eta(i,j,k,m) 
-							  - 1.0 + 2.0*gamma*sum_of_squares)*eta(i,j,k,m)  - kappa*laplacian);    // isotropic response
+							//  - 1.0 + 2.0*gamma*sum_of_squares)*eta(i,j,k,m)  - kappa*laplacian);    // isotropic response
 							//if (std::isnan(etanew(i,j,k,m))) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
 
 						// mahi - remove later
