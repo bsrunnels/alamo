@@ -33,7 +33,7 @@ pf.gamma = 1.0
 pf.l_gb=0.1
 pf.sigma0=0.075
 
-anisotropy.on=1
+anisotropy.on=0
 anisotropy.timestep=0.001
 anisotropy.tstart= 1.
 anisotropy.theta0= 0
