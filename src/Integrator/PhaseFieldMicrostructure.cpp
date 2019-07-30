@@ -317,7 +317,7 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
  							Set::Scalar DKappa = l_gb*0.75*boundary->DW(Theta);
 							Set::Scalar DDKappa = l_gb*0.75*boundary->DDW(Theta);
  							Set::Scalar Mu = 0.75 * (1.0/0.23) * boundary->W(Theta) / l_gb;
-								Util::Abort(INFO, " W: ", boundary->W(Theta), "\n l_gb: ", l_gb, "\n theta: ",Theta*180/PI); //mahi
+								//Util::Abort(INFO, " W: ", boundary->W(Theta), "\n l_gb: ", l_gb, "\n theta: ",Theta*180/PI); //mahi
  							Set::Scalar sinTheta = sin(Theta);
  							Set::Scalar cosTheta = cos(Theta);
 		
