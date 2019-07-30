@@ -342,12 +342,14 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 
  							amrex::Real W =
  								Mu*(eta(i,j,k,m)*eta(i,j,k,m) - 1.0 + 2.0*gamma*sum_of_squares)*eta(i,j,k,m);
-							if (std::isnan(W)) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
+							//if (std::isnan(W)) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
+							if (std::isnan(W)) Util::Abort(INFO," Mu: ",Mu,"\n gamma: ",gamma,"\n sum_of_squares: ,",sum_of_squares);
 
  							amrex::Real Boundary_term =
  								Kappa*laplacian +
  								DKappa*(cos(2.0*Theta)*DDeta(0,1) + 0.5*sin(2.0*Theta)*(DDeta(1,1) - DDeta(0,0)))
  								+ 0.5*DDKappa*(sinTheta*sinTheta*DDeta(0,0) - 2.*sinTheta*cosTheta*DDeta(0,1) + cosTheta*cosTheta*DDeta(1,1));
+							//if (std::isnan(Boundary_term)) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
 							if (std::isnan(Boundary_term)) Util::Abort(INFO," Kappa: ",Kappa,"\n laplacian: ",laplacian,"\n DKappa: ,",DKappa, "\n DDKappa: ",DDKappa);
 			
 			
@@ -364,7 +366,6 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
  								      -(Kappa*laplacian +
  								DKappa*(cos(2.0*Theta)*DDeta(0,1) + 0.5*sin(2.0*Theta)*(DDeta(1,1) - DDeta(0,0)))
  								+ 0.5*DDKappa*(sinTheta*sinTheta*DDeta(0,0) - 2.*sinTheta*cosTheta*DDeta(0,1) + cosTheta*cosTheta*DDeta(1,1))));
-							  //find out why boundary term is nan
 							if (std::isnan(etanew(i,j,k,m))) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
 
 						// mahi - remove later
