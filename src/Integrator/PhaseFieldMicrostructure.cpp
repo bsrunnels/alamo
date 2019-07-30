@@ -370,19 +370,6 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
  								DKappa*(cos(2.0*Theta)*DDeta(0,1) + 0.5*sin(2.0*Theta)*(DDeta(1,1) - DDeta(0,0)))
  								+ 0.5*DDKappa*(sinTheta*sinTheta*DDeta(0,0) - 2.*sinTheta*cosTheta*DDeta(0,1) + cosTheta*cosTheta*DDeta(1,1))));
 							if (std::isnan(etanew(i,j,k,m))) Util::Abort(INFO,"nan at m=",i,",",j,",",k); // ran no evolution */
-							
-							//mahi
-							std::ofstream ofs1{anis_etas, std::ios_base::out};
-							std::ofstream ofs2{anis_Ws, std::ios_base::out};
-							std::ofstream ofs3{anis_Boundary_terms, std::ios_base::out};
-							std::ofstream ofs4{anis_Curvature_terms, std::ios_base::out};
-							
-							if (!ofs1 || !ofs2 || !ofs3 || !ofs4){Util::Abort(INFO,"not all files opened successfully: ", ofs1," ", ofs2," ", ofs3," ", ofs4)};
-							
-							while(ofs1 << "\n" << etanew << "\n");
-							while(ofs2 << "\n" << W << "\n");
-							while(ofs3 << "\n" << Boundary_term << "\n");
-							while(ofs4 << "\n" << Curvature_term << "\n");
 
 						// mahi - remove later
 							/*Set::Scalar w_read = boundary->W(Theta);
@@ -414,23 +401,7 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
  								eta(i,j,k,m) -
  								M*dt*(mu*(eta(i,j,k,m)*eta(i,j,k,m) - 1.0 + 2.0*gamma*sum_of_squares)*eta(i,j,k,m)
  								      - kappa*laplacian);
- 						
-						 //mahi
-
-						 if(time > anisotropy_tstart){
-							std::ofstream ofs1{is_etas, std::ios_base::out};
-							std::ofstream ofs2{is_Ws, std::ios_base::out};
-							std::ofstream ofs3{is_Boundary_terms, std::ios_base::out};
-							
-							if (!ofs1 || !ofs2 || !ofs3){Util::Abort(INFO,"not all files opened successfully: ", ofs1," ", ofs2," ", ofs3)};
-							
-							while(ofs1 << "\n" << etanew << "\n");
-							while(ofs2 << "\n" << M*dt*(mu*(eta(i,j,k,m)*eta(i,j,k,m) - 1.0 + 2.0*gamma*sum_of_squares)*eta(i,j,k,m) << "\n");
-							while(ofs3 << "\n" << kappa*laplacian << "\n");
-						 }
-						 
-						}
-						
+ 						}
 
 
  						//
