@@ -269,11 +269,8 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 						amrex::Real sum_of_squares = 0.;
 						for (int n = 0; n < number_of_grains; n++)
 						{
-							if (m==n) continue;
+							if (m==n && !(eta(i,j,k,n) > 0.99) continue;   //mahi remove 2nd condition later
 							sum_of_squares += eta(i,j,k,n)*eta(i,j,k,n);
-							if (sum_of_squares < 0.0 || sum_of_squares > 0.95 ){
-								Util::Abort(INFO, "sum_of_squares: ",sum_of_squares,"\n eta: ",eta(i,j,k,n)); //mahi
-							}
 
 						}
 
