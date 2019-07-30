@@ -271,6 +271,10 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 						{
 							if (m==n) continue;
 							sum_of_squares += eta(i,j,k,n)*eta(i,j,k,n);
+							if (sum_of_squares < 0.0 || sum_of_squares > 0.95 ){
+								Util::Abort(INFO, "sum_of_squares: ",sum_of_squares,"\n eta: ",eta(i,j,k,n)); //mahi
+							}
+
 						}
 
 						//
