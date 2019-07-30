@@ -1,7 +1,7 @@
 timestep = 0.1
 stop_time = 50
 
-plot_file = tests/PerturbedInterface/comp_w_isotropic/see_if_C_term_makes_diff
+plot_file = tests/PerturbedInterface/comp_w_isotropic/why_is_boundary_term_nan
 
 amr.plot_int = 1000
 amr.thermo_int = 1000
