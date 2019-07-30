@@ -345,6 +345,16 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
  							amrex::Real W =
  								Mu*(eta(i,j,k,m)*eta(i,j,k,m) - 1.0 + 2.0*gamma*sum_of_squares)*eta(i,j,k,m);
 							//if (std::isnan(W)) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
+							if (std::isnan(W)){
+								if (W == 0){
+									Util::Abort(INFO, "true true");
+								}
+								else{
+									Util::Abort(INFO, "nope nope");
+								}
+							};
+
+
 							if (W == 0) Util::Abort(INFO," Mu: ",Mu,"\n gamma: ",gamma,"\n sum_of_squares: ",sum_of_squares, "\n eta: ", eta(i,j,k,m));
 							if (std::isnan(W)) Util::Abort(INFO," Mu: ",Mu,"\n gamma: ",gamma,"\n sum_of_squares: ",sum_of_squares);
 
