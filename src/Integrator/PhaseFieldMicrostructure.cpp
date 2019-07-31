@@ -315,6 +315,7 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 							
 							
 							Set::Scalar Kappa = l_gb*0.75*boundary->W(Theta);
+								Util::Abort(INFO, " Kappa: " Kappa)
  							Set::Scalar DKappa = l_gb*0.75*boundary->DW(Theta);
 							Set::Scalar DDKappa = l_gb*0.75*boundary->DDW(Theta);
  							Set::Scalar Mu = 0.75 * (1.0/0.23) * boundary->W(Theta) / l_gb;
