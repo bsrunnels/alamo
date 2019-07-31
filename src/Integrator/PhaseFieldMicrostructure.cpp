@@ -315,7 +315,7 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 							
 							
 							Set::Scalar Kappa = l_gb*0.75*boundary->W(Theta);
-								Util::Abort(INFO, " Kappa: ", Kappa);
+								//Util::Abort(INFO, " Kappa: ", Kappa);
  							Set::Scalar DKappa = l_gb*0.75*boundary->DW(Theta);
 							Set::Scalar DDKappa = l_gb*0.75*boundary->DDW(Theta);
  							Set::Scalar Mu = 0.75 * (1.0/0.23) * boundary->W(Theta) / l_gb;
@@ -346,7 +346,7 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
  							amrex::Real W =
  								Mu*(eta(i,j,k,m)*eta(i,j,k,m) - 1.0 + 2.0*gamma*sum_of_squares)*eta(i,j,k,m);
 							//if (std::isnan(W)) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
-							//if (W == 0) Util::Abort(INFO," Mu: ",Mu,"\n gamma: ",gamma,"\n sum_of_squares: ",sum_of_squares, "\n eta: ", eta(i,j,k,m));
+							if (W == 0) Util::Abort(INFO," Mu: ",Mu,"\n gamma: ",gamma,"\n sum_of_squares: ",sum_of_squares, "\n eta: ", eta(i,j,k,m));
 							if (std::isnan(W)) Util::Abort(INFO," Mu: ",Mu,"\n gamma: ",gamma,"\n sum_of_squares: ",sum_of_squares);
 
  							amrex::Real Boundary_term =
