@@ -286,6 +286,7 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 		      
 						amrex::Real laplacian = AMREX_D_TERM(grad11, + grad22, + grad33); //removed commas after grad11 and grad22..- mahi
 						//Util::Abort(INFO," grad11: ",grad11,"\n grad22: ",grad22,"\n grad33: ,",grad33);
+						Util::Abort(INFO," laplacian: ",laplacian);
 
 						amrex::Real kappa = l_gb*0.75*sigma0;
 						mu = 0.75 * (1.0/0.23) * sigma0 / l_gb;
