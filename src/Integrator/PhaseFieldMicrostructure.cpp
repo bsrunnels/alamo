@@ -284,7 +284,8 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 						 			 grad22 = (eta(i,j+1,k,m) - 2.*eta(i,j,k,m) + eta(i,j-1,k,m))/DX[1]/DX[1],
 						 			 grad33 = (eta(i,j,k+1,m) - 2.*eta(i,j,k,m) + eta(i,j,k-1,m))/DX[2]/DX[2]);
 		      
-						amrex::Real laplacian = AMREX_D_TERM(grad11 + grad22 + grad33); //removed commas after grad11 and grad22..- mahi
+						amrex::Real laplacian = AMREX_D_TERM(grad11, + grad22, + grad33); //removed commas after grad11 and grad22..- mahi
+						Util::Abort(INFO," grad11: ",grad11,"\n grad22: ",grad22,"\n grad33: ,",grad33);
 
 						amrex::Real kappa = l_gb*0.75*sigma0;
 						mu = 0.75 * (1.0/0.23) * sigma0 / l_gb;
