@@ -19,7 +19,6 @@ namespace GB
 ///
  class Read : public GB
 {
-/*  dooooo nothinggggggg
 public:
   /// \brief Read in data
   ///
@@ -28,7 +27,7 @@ public:
   /// \f[ \int_0^1x^2dx = \frac{1}{3} \f]
   ///
   Read(std::string fileName)
-  {
+  {/*  dooooo nothinggggggg
     int i, size;
     double theta, sigmaW, res;
     amrex::Real data1, data2; 
@@ -76,9 +75,11 @@ public:
 	sigmasDDW.push_back((sigmasDW[i+1]-sigmasDW[i])/(thetas[i+1]-thetas[i]));
       }
     }
-
+*/ 
     }; 
-  
+
+
+/* mooooooreee nothinnnnggggg
   amrex::Real W(amrex::Real theta)
   {
     // put in code so that 0 <= theta < 2*pi
@@ -174,13 +175,15 @@ public:
       } 
     }
     return 0;
-  };
+  }; */
 
+/* 
 private:
   std::vector<amrex::Real> thetas, sigmasW, sigmasDW, sigmasDDW;
-  int size;
+  int size; 
+*/
 };
 }
 }
-} */
+}  
 #endif
