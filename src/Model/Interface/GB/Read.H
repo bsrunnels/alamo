@@ -8,8 +8,8 @@
 #include "GB.H"
 
 #define PI 3.14159265 
- 
- namespace Model
+
+namespace Model
 {
 namespace Interface
 {
@@ -17,7 +17,7 @@ namespace GB
 {
 /// Reads the data from a file and computes energies and its derivates
 ///
- class Read : public GB
+class Read : public GB
 {
 public:
   /// \brief Read in data
@@ -27,8 +27,7 @@ public:
   /// \f[ \int_0^1x^2dx = \frac{1}{3} \f]
   ///
   Read(std::string fileName)
-  {Util::Abort(INFO, "yup")
-    /*  dooooo nothinggggggg
+  {  dooooo nothinggggggg
     int i, size;
     double theta, sigmaW, res;
     amrex::Real data1, data2; 
@@ -76,10 +75,7 @@ public:
 	sigmasDDW.push_back((sigmasDW[i+1]-sigmasDW[i])/(thetas[i+1]-thetas[i]));
       }
     }
-*/ 
-    }; 
-
-
+  };
 
   amrex::Real W(amrex::Real theta)
   {
@@ -178,13 +174,11 @@ public:
     return 0;
   }; 
 
-/* 
 private:
   std::vector<amrex::Real> thetas, sigmasW, sigmasDW, sigmasDDW;
-  int size; 
-*/
+  int size;
 };
 }
 }
-}  
+}
 #endif
