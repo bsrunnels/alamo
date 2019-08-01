@@ -27,7 +27,7 @@ public:
   /// \f[ \int_0^1x^2dx = \frac{1}{3} \f]
   ///
   Read(std::string fileName)
-  {  dooooo nothinggggggg
+  {
     int i, size;
     double theta, sigmaW, res;
     amrex::Real data1, data2; 
