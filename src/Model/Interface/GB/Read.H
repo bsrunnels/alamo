@@ -27,7 +27,8 @@ public:
   /// \f[ \int_0^1x^2dx = \frac{1}{3} \f]
   ///
   Read(std::string fileName)
-  {/*  dooooo nothinggggggg
+  {Util::Abort(INFO, "yup")
+    /*  dooooo nothinggggggg
     int i, size;
     double theta, sigmaW, res;
     amrex::Real data1, data2; 
@@ -79,7 +80,7 @@ public:
     }; 
 
 
-/* mooooooreee nothinnnnggggg
+
   amrex::Real W(amrex::Real theta)
   {
     // put in code so that 0 <= theta < 2*pi
@@ -175,7 +176,7 @@ public:
       } 
     }
     return 0;
-  }; */
+  }; 
 
 /* 
 private:
