@@ -284,9 +284,9 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 						 			 grad22 = (eta(i,j+1,k,m) - 2.*eta(i,j,k,m) + eta(i,j-1,k,m))/DX[1]/DX[1],
 						 			 grad33 = (eta(i,j,k+1,m) - 2.*eta(i,j,k,m) + eta(i,j,k-1,m))/DX[2]/DX[2]);
 		      
-						amrex::Real laplacian = AMREX_D_TERM(grad11, + grad22, + grad33); //removed commas after grad11 and grad22..- mahi
+						amrex::Real laplacian = AMREX_D_TERM(grad11, + grad22, + grad33);
 						//Util::Abort(INFO," grad11: ",grad11,"\n grad22: ",grad22,"\n grad33: ,",grad33);
-						Util::Abort(INFO," laplacian: ",laplacian);
+						//Util::Abort(INFO," laplacian: ",laplacian);
 
 						amrex::Real kappa = l_gb*0.75*sigma0;
 						mu = 0.75 * (1.0/0.23) * sigma0 / l_gb;
@@ -356,7 +356,7 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
  								DKappa*(cos(2.0*Theta)*DDeta(0,1) + 0.5*sin(2.0*Theta)*(DDeta(1,1) - DDeta(0,0)))
  								+ 0.5*DDKappa*(sinTheta*sinTheta*DDeta(0,0) - 2.*sinTheta*cosTheta*DDeta(0,1) + cosTheta*cosTheta*DDeta(1,1));
 							//if (std::isnan(Boundary_term)) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
-							//if (std::isnan(Boundary_term)) Util::Abort(INFO," Kappa: ",Kappa,"\n laplacian: ",laplacian,"\n DKappa: ,",DKappa, "\n DDKappa: ",DDKappa);
+							if (std::isnan(Boundary_term)) Util::Abort(INFO," Kappa: ",Kappa,"\n laplacian: ",laplacian,"\n DKappa: ,",DKappa, "\n DDKappa: ",DDKappa, "\n grad11: ",grad11,"\n grad22: ",grad22,"\n grad33: ,",grad33);
 							//if (std::isnan(Boundary_term)) Util::Abort(INFO," grad11: ",grad11,"\n grad22: ",grad22,"\n grad33: ,",grad33);
 
 
