@@ -9,7 +9,11 @@
 
 #define PI 3.14159265 
 
-namespace Model
+
+
+
+// original content 
+/* namespace Model
 {
 namespace Interface
 {
@@ -17,7 +21,7 @@ namespace GB
 {
 /// Reads the data from a file and computes energies and its derivates
 ///
-class Read : public GB
+ class Read : public GB
 {
 public:
   /// \brief Read in data
@@ -76,15 +80,8 @@ public:
       }
     }
 
-    //remove this later
-    /*std::string message;
-    for (i = 0; i < size; i++){
-      message += std::to_string(sigmasW[i]) + ", ";
-    }
-    Util::Abort(INFO, message);*/
-
-    //Print Thetas Sigmas Sigmas' and Sigmas''
-  };
+    }; 
+  
   amrex::Real W(amrex::Real theta)
   {
     // put in code so that 0 <= theta < 2*pi
@@ -190,3 +187,4 @@ private:
 }
 }
 #endif
+*/
