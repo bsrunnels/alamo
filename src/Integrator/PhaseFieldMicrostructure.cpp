@@ -33,7 +33,7 @@ PhaseFieldMicrostructure::PhaseFieldMicrostructure() : Integrator()
 		pp.query("max_level",max_level);
 	}
 	{
-		amrex::Real theta0,sigma0,sigma1;
+		amrex::Real theta0,sigma0,sigma1, frequency;
 
 		amrex::ParmParse pp("anisotropy"); // Phase-field model parameters
 		pp.query("on", anisotropy);
