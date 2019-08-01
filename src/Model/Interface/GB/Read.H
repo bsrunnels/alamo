@@ -8,12 +8,8 @@
 #include "GB.H"
 
 #define PI 3.14159265 
-
-
-
-
-// original content 
-/* namespace Model
+ 
+ namespace Model
 {
 namespace Interface
 {
@@ -23,6 +19,7 @@ namespace GB
 ///
  class Read : public GB
 {
+/*  dooooo nothinggggggg
 public:
   /// \brief Read in data
   ///
