@@ -1,7 +1,7 @@
 timestep = 0.1
 stop_time = 50
 
-plot_file = tests/PerturbedInterface/comp_w_isotropic/isotropic_replacement
+plot_file = tests/PerturbedInterface/comp_w_isotropic/reset_PFM_file
 
 amr.plot_int = 1000
 amr.thermo_int = 1000
@@ -42,7 +42,7 @@ anisotropy.sigma1= 0.25
 anisotropy.frequency= 4
 anisotropy.beta= 0
 anisotropy.damp=1.0
-anisotropy.gb_type="read"
+anisotropy.gb_type="abssin"
 anisotropy.filename= tests/PerturbedInterface/line.txt
 
 elastic.on=0
