@@ -42,7 +42,7 @@ anisotropy.sigma1= 0.25
 anisotropy.frequency= 4
 anisotropy.beta= 0
 anisotropy.damp=1.0
-anisotropy.gb_type="abssin"
+anisotropy.gb_type="sin"
 anisotropy.filename= tests/PerturbedInterface/line.txt
 
 elastic.on=0

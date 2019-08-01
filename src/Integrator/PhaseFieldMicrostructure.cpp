@@ -269,7 +269,7 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 						amrex::Real sum_of_squares = 0.;
 						for (int n = 0; n < number_of_grains; n++)
 						{
-							if (m==n) continue;  							
+							if (m==n) continue;
 							sum_of_squares += eta(i,j,k,n)*eta(i,j,k,n);
 
 						}
@@ -285,8 +285,6 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 						 			 grad33 = (eta(i,j,k+1,m) - 2.*eta(i,j,k,m) + eta(i,j,k-1,m))/DX[2]/DX[2]);
 		      
 						amrex::Real laplacian = AMREX_D_TERM(grad11, + grad22, + grad33);
-						//Util::Abort(INFO," grad11: ",grad11,"\n grad22: ",grad22,"\n grad33: ,",grad33);
-						//Util::Abort(INFO," laplacian: ",laplacian);
 
 						amrex::Real kappa = l_gb*0.75*sigma0;
 						mu = 0.75 * (1.0/0.23) * sigma0 / l_gb;
@@ -317,11 +315,9 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 							
 							
 							Set::Scalar Kappa = l_gb*0.75*boundary->W(Theta);
-								//Util::Abort(INFO, " Kappa: ", Kappa);
  							Set::Scalar DKappa = l_gb*0.75*boundary->DW(Theta);
 							Set::Scalar DDKappa = l_gb*0.75*boundary->DDW(Theta);
  							Set::Scalar Mu = 0.75 * (1.0/0.23) * boundary->W(Theta) / l_gb;
-								//Util::Abort(INFO, " W: ", boundary->W(Theta), "\n l_gb: ", l_gb, "\n theta: ",Theta*180/PI); //mahi
  							Set::Scalar sinTheta = sin(Theta);
  							Set::Scalar cosTheta = cos(Theta);
 		
@@ -347,19 +343,15 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 
  							amrex::Real W =
  								Mu*(eta(i,j,k,m)*eta(i,j,k,m) - 1.0 + 2.0*gamma*sum_of_squares)*eta(i,j,k,m);
-							//if (std::isnan(W)) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
-							//if (W == 0) Util::Abort(INFO," Mu: ",Mu,"\n gamma: ",gamma,"\n sum_of_squares: ",sum_of_squares, "\n eta: ", eta(i,j,k,m));
-							//if (std::isnan(W)) Util::Abort(INFO," Mu: ",Mu,"\n gamma: ",gamma,"\n sum_of_squares: ",sum_of_squares);
+							if (std::isnan(W)) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
 
  							amrex::Real Boundary_term =
  								Kappa*laplacian +
  								DKappa*(cos(2.0*Theta)*DDeta(0,1) + 0.5*sin(2.0*Theta)*(DDeta(1,1) - DDeta(0,0)))
  								+ 0.5*DDKappa*(sinTheta*sinTheta*DDeta(0,0) - 2.*sinTheta*cosTheta*DDeta(0,1) + cosTheta*cosTheta*DDeta(1,1));
-							//if (std::isnan(Boundary_term)) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
-							// if (std::isnan(Boundary_term)) Util::Abort(INFO," Kappa: ",Kappa,"\n laplacian: ",laplacian,"\n DKappa: ,",DKappa, "\n DDKappa: ",DDKappa, "\n grad11: ",grad11,"\n grad22: ",grad22/*,"\n grad33: ,",grad33*/);
-							//if (std::isnan(Boundary_term)) Util::Abort(INFO," grad11: ",grad11,"\n grad22: ",grad22,"\n grad33: ,",grad33);
-
-
+							if (std::isnan(Boundary_term)) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
+			
+			
  							etanew(i,j,k,m) = eta(i,j,k,m) - M*dt*(W - (Boundary_term) + beta*(Curvature_term));
 							/* etanew(i,j,k,m) =
  								eta(i,j,k,m) -
@@ -406,7 +398,6 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
  								M*dt*(mu*(eta(i,j,k,m)*eta(i,j,k,m) - 1.0 + 2.0*gamma*sum_of_squares)*eta(i,j,k,m)
  								      - kappa*laplacian);
  						}
-
 
  						//
  						// SYNTHETIC DRIVING FORCE
