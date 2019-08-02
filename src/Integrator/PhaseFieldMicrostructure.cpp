@@ -308,9 +308,9 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 
  							Set::Scalar Theta = atan2(Deta(1),Deta(0));
 
-							if (std::isnan(boundary -> W(Theta))) Util::Warning(INFO," W is nan at: ",Theta*180/PI);
-							if (std::isnan(boundary -> DW(Theta))) Util::Warning(INFO," DW is nan at: ",Theta*180/PI);
-							if (std::isnan(boundary -> DDW(Theta))) Util::Warning(INFO," DDW is nan at: ",Theta*180/PI);   // <- Mahi remove this later
+							if !(std::isnan(boundary -> W(Theta))) Util::Warning(INFO," W: ", boundary -> W(Theta)," W isnt nan at: ",Theta*180/PI);
+							if !(std::isnan(boundary -> DW(Theta))) Util::Warning(INFO," DW: ", boundary -> DW(Theta)," DW isnt nan at: ",Theta*180/PI);
+							if !(std::isnan(boundary -> DDW(Theta))) Util::Warning(INFO," DW: ", boundary -> DDW(Theta)," DDW isnt nan at: ",Theta*180/PI);   // <- Mahi remove this later
 
 							Set::Scalar Kappa = l_gb*0.75*boundary->W(Theta);
  							Set::Scalar DKappa = l_gb*0.75*boundary->DW(Theta);
