@@ -306,6 +306,10 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 							if (fabs(dw_exact - dw_read) > 1E-2)   Util::Warning(INFO,Theta*180/PI," ",dw_exact, " ", dw_read);
 							if (fabs(ddw_exact - ddw_read) > 1E-2) Util::Warning(INFO,Theta*180/PI," ",ddw_exact, " ", ddw_read); */
 
+							if (std::isnan(boundary -> W(Theta))) Util::Warning(INFO," W is nan at: ",Theta*180/PI);
+							if (std::isnan(boundary -> DW(Theta))) Util::Warning(INFO," DW is nan at: ",Theta*180/PI);
+							if (std::isnan(boundary -> DDW(Theta))) Util::Warning(INFO," DDW is nan at: ",Theta*180/PI);
+
  							Set::Scalar Theta = atan2(Deta(1),Deta(0));
 							Set::Scalar Kappa = l_gb*0.75*boundary->W(Theta);
  							Set::Scalar DKappa = l_gb*0.75*boundary->DW(Theta);

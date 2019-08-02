@@ -44,9 +44,7 @@ public:
   amrex::Real W(amrex::Real theta)
   {
     //sigma(theta)=sigma0+sigma1*fabs(sin(n*(theta-theta0)))
-    //n=2: 
-
-    if (std::isnan(sigma0+sigma1*fabs(sin((frequency / 2)*(theta-theta0))))) Util::Abort(INFO, "theta: ", theta);
+    //n=2:
     return sigma0+sigma1*fabs(sin((frequency / 2)*(theta-theta0)));  
     
   };
@@ -54,14 +52,12 @@ public:
   {
     //sigma'(theta)=(n*sigma1*sin(n*(theta-theta0))*cos(n*(theta-theta0)))/fabs(sin(n*(theta-theta0)))
     //n=2:
-    if (std::isnan(((frequency / 2)*sigma1*sin((frequency / 2)*(theta-theta0))*cos((frequency / 2)*(theta-theta0)))/fabs(sin((frequency / 2)*(theta-theta0)))) Util::Abort(INFO, "theta: ", theta);
     return ((frequency / 2)*sigma1*sin((frequency / 2)*(theta-theta0))*cos((frequency / 2)*(theta-theta0)))/fabs(sin((frequency / 2)*(theta-theta0)));
   };
   amrex::Real DDW(amrex::Real theta)
   {
     //sigma''(theta)=-n^2*sigma1*fabs(sin(n*(theta-theta0)))
     //n=2:
-    if (std::isnan(-1*(frequency*frequency / 4)*sigma1*fabs(sin((frequency / 2)*(theta-theta0)))) Util::Abort(INFO, "theta: ", theta);
     return -1*(frequency*frequency / 4)*sigma1*fabs(sin((frequency / 2)*(theta-theta0)));
   };
  
