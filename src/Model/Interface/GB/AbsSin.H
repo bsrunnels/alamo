@@ -62,7 +62,8 @@ public:
   };
  
 private:
-  amrex::Real theta0 = NAN, sigma0 = NAN, sigma1 = NAN, frequency = NAN;
+    amrex::Real theta0 = 0, sigma0 = 0.1, sigma1 = 0.25, frequency = 4;
+  //amrex::Real theta0 = NAN, sigma0 = NAN, sigma1 = NAN, frequency = NAN;
 };
 }
 }
