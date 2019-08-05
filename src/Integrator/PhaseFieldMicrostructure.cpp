@@ -308,9 +308,9 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 
  							Set::Scalar Theta = atan2(Deta(1),Deta(0));
 
-							if ((std::isnan(boundary -> W(Theta))) ) Util::Warning(INFO," W: ", boundary -> W(Theta)," W is nan at: ",Theta*180/PI);
-							if ((std::isnan(boundary -> DW(Theta))) ) Util::Warning(INFO," DW: ", boundary -> DW(Theta)," DW is nan at: ",Theta*180/PI);
-							if ((std::isnan(boundary -> DDW(Theta))) ) Util::Warning(INFO," DW: ", boundary -> DDW(Theta)," DDW is nan at: ",Theta*180/PI);   // <- Mahi remove this later
+							/* Util::Warning(INFO," W: ", boundary -> W(Theta)," theta: ",Theta*180/PI);
+							Util::Warning(INFO," DW: ", boundary -> DW(Theta)," theta: ",Theta*180/PI);
+							Util::Warning(INFO," DW: ", boundary -> DDW(Theta)," theta: ",Theta*180/PI);   */
 
 							Set::Scalar Kappa = l_gb*0.75*boundary->W(Theta);
  							Set::Scalar DKappa = l_gb*0.75*boundary->DW(Theta);
@@ -318,7 +318,14 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
  							Set::Scalar Mu = 0.75 * (1.0/0.23) * boundary->W(Theta) / l_gb;
  							Set::Scalar sinTheta = sin(Theta);
  							Set::Scalar cosTheta = cos(Theta);
-		
+
+							Util::Warning(INFO," Kappa: ", Kappa," theta: ",Theta*180/PI);
+							Util::Warning(INFO," DKappa: ", DKappa," theta: ",Theta*180/PI);
+							Util::Warning(INFO," DDKappa: ", DDKappa," theta: ",Theta*180/PI);
+							Util::Warning(INFO," Mu: ", Mu," theta: ",Theta*180/PI);
+							Util::Warning(INFO," sinTheta: ", sinTheta," theta: ",Theta*180/PI);
+							Util::Warning(INFO," cosTheta: ", cosTheta," theta: ",Theta*180/PI);
+
  							// amrex::Real norm_grad = grad1*grad1+grad2*grad2; //(UNUSED)
 		
 
