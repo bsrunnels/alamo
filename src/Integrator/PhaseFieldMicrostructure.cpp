@@ -365,7 +365,7 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
  							etanew(i,j,k,m) = eta(i,j,k,m) - M*dt*(W - (Boundary_term) + beta*(Curvature_term));
 							if (std::isnan(etanew(i,j,k,m))) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
 							
-							Util::Warning(INFO," etanew: ", etanew," theta: ",Theta*180/PI);
+							Util::Warning(INFO," etanew: ", etanew(i,j,k,m)," theta: ",Theta*180/PI);
 #else
  							Util::Abort(INFO, "Anisotropy is enabled but works in 2D ONLY");
 #endif
