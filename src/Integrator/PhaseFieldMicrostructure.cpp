@@ -319,12 +319,12 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
  							Set::Scalar sinTheta = sin(Theta);
  							Set::Scalar cosTheta = cos(Theta);
 
-							Util::Warning(INFO," Kappa: ", Kappa," theta: ",Theta*180/PI);
+							/* Util::Warning(INFO," Kappa: ", Kappa," theta: ",Theta*180/PI);
 							Util::Warning(INFO," DKappa: ", DKappa," theta: ",Theta*180/PI);
 							Util::Warning(INFO," DDKappa: ", DDKappa," theta: ",Theta*180/PI);
 							Util::Warning(INFO," Mu: ", Mu," theta: ",Theta*180/PI);
 							Util::Warning(INFO," sinTheta: ", sinTheta," theta: ",Theta*180/PI);
-							Util::Warning(INFO," cosTheta: ", cosTheta," theta: ",Theta*180/PI);
+							Util::Warning(INFO," cosTheta: ", cosTheta," theta: ",Theta*180/PI); */
 
  							// amrex::Real norm_grad = grad1*grad1+grad2*grad2; //(UNUSED)
 		
@@ -346,19 +346,26 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
  								+grad1222*(4.0*sinTheta*cosTheta*cosTheta*cosTheta)
  								+grad2222*(cosTheta*cosTheta*cosTheta*cosTheta);
 
+							Util::Warning(INFO," Curvature_term: ", Curvature_term," theta: ",Theta*180/PI);
+
  							amrex::Real W =
  								Mu*(eta(i,j,k,m)*eta(i,j,k,m) - 1.0 + 2.0*gamma*sum_of_squares)*eta(i,j,k,m);
 							if (std::isnan(W)) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
+
+							Util::Warning(INFO," W: ", W," theta: ",Theta*180/PI);
 
  							amrex::Real Boundary_term =
  								Kappa*laplacian +
  								DKappa*(cos(2.0*Theta)*DDeta(0,1) + 0.5*sin(2.0*Theta)*(DDeta(1,1) - DDeta(0,0)))
  								+ 0.5*DDKappa*(sinTheta*sinTheta*DDeta(0,0) - 2.*sinTheta*cosTheta*DDeta(0,1) + cosTheta*cosTheta*DDeta(1,1));
 							if (std::isnan(Boundary_term)) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
-			
+
+							Util::Warning(INFO," Boundary_term: ", Boundary_term," theta: ",Theta*180/PI);
 			
  							etanew(i,j,k,m) = eta(i,j,k,m) - M*dt*(W - (Boundary_term) + beta*(Curvature_term));
 							if (std::isnan(etanew(i,j,k,m))) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
+							
+							Util::Warning(INFO," eta_new: ", eta_new," theta: ",Theta*180/PI);
 #else
  							Util::Abort(INFO, "Anisotropy is enabled but works in 2D ONLY");
 #endif
