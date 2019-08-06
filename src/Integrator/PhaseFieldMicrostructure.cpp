@@ -308,9 +308,9 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 
  							Set::Scalar Theta = atan2(Deta(1),Deta(0));
 
-							/* Util::Warning(INFO," W: ", boundary -> W(Theta)," theta: ",Theta*180/PI);
+							Util::Warning(INFO," W: ", boundary -> W(Theta)," theta: ",Theta*180/PI);
 							Util::Warning(INFO," DW: ", boundary -> DW(Theta)," theta: ",Theta*180/PI);
-							Util::Warning(INFO," DW: ", boundary -> DDW(Theta)," theta: ",Theta*180/PI);   */
+							Util::Warning(INFO," DW: ", boundary -> DDW(Theta)," theta: ",Theta*180/PI); 
 
 							Set::Scalar Kappa = l_gb*0.75*boundary->W(Theta);
  							Set::Scalar DKappa = l_gb*0.75*boundary->DW(Theta);
