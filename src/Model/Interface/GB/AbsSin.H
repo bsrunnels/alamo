@@ -45,20 +45,20 @@ public:
   {
     //sigma(theta)=sigma0+sigma1*fabs(sin(n*(theta-theta0)))
     //n=2:
-    return sigma0+sigma1*fabs(sin((frequency / 2)*(theta-theta0)));  
+    return sigma0+sigma1*fabs(sin( 0.5 * frequency *(theta-theta0)));  
     
   };
   amrex::Real DW(amrex::Real theta)
   {
     //sigma'(theta)=(n*sigma1*sin(n*(theta-theta0))*cos(n*(theta-theta0)))/fabs(sin(n*(theta-theta0)))
     //n=2:
-    return ((frequency / 2)*sigma1*sin((frequency / 2)*(theta-theta0))*cos((frequency / 2)*(theta-theta0)))/fabs(sin((frequency / 2)*(theta-theta0)));
+    return ((frequency / 2)*sigma1*sin(0.5 * frequency * (theta-theta0))*cos(0.5 * frequency *(theta-theta0)))/fabs(sin(0.5 * frequency  * (theta-theta0)));
   };
   amrex::Real DDW(amrex::Real theta)
   {
     //sigma''(theta)=-n^2*sigma1*fabs(sin(n*(theta-theta0)))
     //n=2:
-    return -1*(frequency*frequency / 4)*sigma1*fabs(sin((frequency / 2)*(theta-theta0)));
+    return -0.25 * frequency*frequency*sigma1*fabs(sin(0.5 * frequency *(theta-theta0)));
   };
  
 private:
