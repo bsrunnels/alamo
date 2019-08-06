@@ -358,12 +358,13 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
  								Kappa*laplacian +
  								DKappa*(cos(2.0*Theta)*DDeta(0,1) + 0.5*sin(2.0*Theta)*(DDeta(1,1) - DDeta(0,0)))
  								+ 0.5*DDKappa*(sinTheta*sinTheta*DDeta(0,0) - 2.*sinTheta*cosTheta*DDeta(0,1) + cosTheta*cosTheta*DDeta(1,1));
-							if (std::isnan(Boundary_term)) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
 							
 							Util::Warning(INFO," Boundary_term: ", Boundary_term,"\n theta: ",Theta*180/PI, 
 							"\n Kappa: ", Kappa, "\n DKappa: ", DKappa, "\n DDKappa: ", DDKappa, "\n DDeta(0,1): ", 
 							DDeta(0,1), "\n DDeta(0,0): ", DDeta(0,0), "\n DDeta(1,1): ", DDeta(1,1), "/n sinTheta: ", 
 							sinTheta, "/n cosTheta: ", cosTheta, "\n laplacian: ", laplacian);
+
+							if (std::isnan(Boundary_term)) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
 
 							//Util::Warning(INFO," Boundary_term: ", Boundary_term," theta: ",Theta*180/PI);
 			
