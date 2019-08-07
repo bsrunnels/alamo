@@ -346,6 +346,8 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
  								+grad1122*(6.0*sinTheta*sinTheta*cosTheta*cosTheta)
  								+grad1222*(4.0*sinTheta*cosTheta*cosTheta*cosTheta)
  								+grad2222*(cosTheta*cosTheta*cosTheta*cosTheta);
+							
+							if(std::isnan(Curvature_term)) Util::Abort(INFO, "grads1111 to 2222 : ", grad1111, " ", grad1112, " ", grad1122, " ", grad1222, " ", grad2222, "\n sintheta ", sinTheta, "\n costheta ", cosTheta, "\n theta ", Theta * 180 / PI);
 
 							//Util::Warning(INFO," Curvature_term: ", Curvature_term," theta: ",Theta*180/PI);
 

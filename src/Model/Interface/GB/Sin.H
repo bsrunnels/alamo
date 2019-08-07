@@ -44,15 +44,16 @@ public:
 	amrex::Real W(amrex::Real theta)
 	{
 		//if(std::isnan(sigma0 + 0.5*sigma1*(1.0 - cos(frequency*(theta-theta0))))) Util::Abort(INFO, "sigma0: ", sigma0, "\n sigma1: ", sigma1, "\n frequency: ", frequency, "\n theta0: ", theta0, "\n theta: ", theta);
+		//Util::Abort(INFO, theta0, sigma0, sigma1, frequency);
 		return sigma0 + 0.5*sigma1*(1.0 - cos(frequency*(theta-theta0)));
 	};
 	amrex::Real DW(amrex::Real theta)
 	{
-		return (frequency / 2) *sigma1*sin(frequency*(theta-theta0));
+		return (0.5 * frequency) *sigma1*sin(frequency*(theta-theta0));
 	};
 	amrex::Real DDW(amrex::Real theta)
 	{
-		return (frequency*frequency / 2)*sigma1*cos(frequency*(theta-theta0));
+		return (0.5 * frequency*frequency)*sigma1*cos(frequency*(theta-theta0));
 	};
   
 private:

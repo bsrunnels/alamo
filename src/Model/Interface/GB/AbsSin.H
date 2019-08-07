@@ -59,7 +59,7 @@ public:
   {
     //sigma''(theta)=-n^2*sigma1*fabs(sin(n*(theta-theta0)))
     //n=2:
-    return -0.25 * frequency*frequency*sigma1*fabs(sin(0.5 * frequency *(theta-theta0)));
+    return -0.25*((W(theta) > 0) - (W(theta) < 0))*frequency*frequency*sigma1*sin(0.5 * frequency *(theta-theta0));
   };
  
 private:
