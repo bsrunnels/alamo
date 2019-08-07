@@ -32,7 +32,7 @@ public:
 		theta0 = _theta0;
 		sigma0 = _sigma0;
 		sigma1 = _sigma1;
-		sigma1 = _frequency;
+		frequency = _frequency;
 	};
 	void Randomize()
 	{
@@ -43,6 +43,7 @@ public:
 	};
 	amrex::Real W(amrex::Real theta)
 	{
+		//if(std::isnan(sigma0 + 0.5*sigma1*(1.0 - cos(frequency*(theta-theta0))))) Util::Abort(INFO, "sigma0: ", sigma0, "\n sigma1: ", sigma1, "\n frequency: ", frequency, "\n theta0: ", theta0, "\n theta: ", theta);
 		return sigma0 + 0.5*sigma1*(1.0 - cos(frequency*(theta-theta0)));
 	};
 	amrex::Real DW(amrex::Real theta)

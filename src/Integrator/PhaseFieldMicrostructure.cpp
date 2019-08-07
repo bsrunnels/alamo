@@ -308,12 +308,13 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
 
  							Set::Scalar Theta = atan2(Deta(1),Deta(0));
 
-							Util::Warning(INFO," W: ", boundary -> W(Theta)," theta: ",Theta*180/PI);
+							/* Util::Warning(INFO," W: ", boundary -> W(Theta)," theta: ",Theta*180/PI);
 							Util::Warning(INFO," DW: ", boundary -> DW(Theta)," theta: ",Theta*180/PI);
-							Util::Warning(INFO," DW: ", boundary -> DDW(Theta)," theta: ",Theta*180/PI); 
+							Util::Warning(INFO," DDW: ", boundary -> DDW(Theta)," theta: ",Theta*180/PI); */
 
 							Set::Scalar Kappa = l_gb*0.75*boundary->W(Theta);
  							Set::Scalar DKappa = l_gb*0.75*boundary->DW(Theta);
+							// if(std::isnan(DKappa)) Util::Abort(INFO," DW: ", boundary -> DW(Theta)," theta: ",Theta*180/PI);
 							Set::Scalar DDKappa = l_gb*0.75*boundary->DDW(Theta);
  							Set::Scalar Mu = 0.75 * (1.0/0.23) * boundary->W(Theta) / l_gb;
  							Set::Scalar sinTheta = sin(Theta);
@@ -352,26 +353,27 @@ PhaseFieldMicrostructure::Advance (int lev, amrex::Real time, amrex::Real dt)
  								Mu*(eta(i,j,k,m)*eta(i,j,k,m) - 1.0 + 2.0*gamma*sum_of_squares)*eta(i,j,k,m);
 							if (std::isnan(W)) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
 
-							//Util::Warning(INFO," W: ", W," theta: ",Theta*180/PI);
+							//if (std::isnan(W)) Util::Abort(INFO," W: ", W," \n theta: ",Theta*180/PI, "\n eta(i,j,k,m): ", eta(i,j,k,m), "\n sum_of_squares ", sum_of_squares, "\n Mu ", Mu, "\n l_gb ", l_gb);
 
  							amrex::Real Boundary_term =
  								Kappa*laplacian +
  								DKappa*(cos(2.0*Theta)*DDeta(0,1) + 0.5*sin(2.0*Theta)*(DDeta(1,1) - DDeta(0,0)))
  								+ 0.5*DDKappa*(sinTheta*sinTheta*DDeta(0,0) - 2.*sinTheta*cosTheta*DDeta(0,1) + cosTheta*cosTheta*DDeta(1,1));
 							
-							Util::Warning(INFO," Boundary_term: ", Boundary_term,"\n theta: ",Theta*180/PI, 
+							if (std::isnan(Boundary_term)) Util::Abort(INFO," Boundary_term: ", Boundary_term,"\n theta: ",Theta*180/PI, 
 							"\n Kappa: ", Kappa, "\n DKappa: ", DKappa, "\n DDKappa: ", DDKappa, "\n DDeta(0,1): ", 
 							DDeta(0,1), "\n DDeta(0,0): ", DDeta(0,0), "\n DDeta(1,1): ", DDeta(1,1), "/n sinTheta: ", 
 							sinTheta, "/n cosTheta: ", cosTheta, "\n laplacian: ", laplacian);
 
-							if (std::isnan(Boundary_term)) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
+							//if (std::isnan(Boundary_term)) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
 
 							//Util::Warning(INFO," Boundary_term: ", Boundary_term," theta: ",Theta*180/PI);
 			
  							etanew(i,j,k,m) = eta(i,j,k,m) - M*dt*(W - (Boundary_term) + beta*(Curvature_term));
-							if (std::isnan(etanew(i,j,k,m))) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
-							
-							Util::Warning(INFO," etanew: ", etanew(i,j,k,m)," theta: ",Theta*180/PI);
+							//if (std::isnan(etanew(i,j,k,m))) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
+							if (std::isnan(etanew(i,j,k,m))) Util::Abort(INFO, "M: ", M, "\n dt: ", dt, "\n W: ", W, "\n Boundary_term: ", Boundary_term, "\n beta: ", beta, "\n Curvature_term: ", Curvature_term);
+
+							//Util::Warning(INFO," etanew: ", etanew(i,j,k,m)," theta: ",Theta*180/PI);
 #else
  							Util::Abort(INFO, "Anisotropy is enabled but works in 2D ONLY");
 #endif

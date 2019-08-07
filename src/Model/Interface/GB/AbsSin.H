@@ -45,20 +45,22 @@ public:
   {
     //sigma(theta)=sigma0+sigma1*fabs(sin(n*(theta-theta0)))
     //n=2:
-    return sigma0+sigma1*fabs(sin((frequency / 2)*(theta-theta0)));  
+    return sigma0+sigma1*fabs(sin((frequency / 2.0)*(theta-theta0)));  
     
   };
   amrex::Real DW(amrex::Real theta)
   {
     //sigma'(theta)=(n*sigma1*sin(n*(theta-theta0))*cos(n*(theta-theta0)))/fabs(sin(n*(theta-theta0)))
     //n=2:
-    return ((frequency / 2)*sigma1*sin((frequency / 2)*(theta-theta0))*cos((frequency / 2)*(theta-theta0)))/fabs(sin((frequency / 2)*(theta-theta0)));
+    if (W(theta) == 0){ return sigma1*(frequency / 2.0)*cos((frequency / 2.0)*(theta-theta0)); };
+    return ((W(theta) > 0) - (W(theta) < 0)) * (sigma1*(frequency / 2.0)*cos((frequency / 2.0)*(theta-theta0)));
   };
   amrex::Real DDW(amrex::Real theta)
   {
     //sigma''(theta)=-n^2*sigma1*fabs(sin(n*(theta-theta0)))
     //n=2:
-    return -1*(frequency*frequency / 4)*sigma1*fabs(sin((frequency / 2)*(theta-theta0)));
+    //return -1*(frequency*frequency / 4)*sigma1*fabs(sin((frequency / 2)*(theta-theta0)));
+    return (-1.0 * ((W(theta) > 0) - (W(theta) < 0)) * sigma1 * (frequency*frequency / 4.0) * sin((frequency / 2.0)*(theta-theta0)));
   };
  
 private:
