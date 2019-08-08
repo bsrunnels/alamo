@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <fstream>
+#include <vector>
+#include <typeinfo> 
 
 #include "AMReX.H"
 #include "GB.H"
@@ -15,170 +17,92 @@ namespace Interface
 {
 namespace GB
 {
-/// Reads the data from a file and computes energies and its derivates
-///
 class Read : public GB
 {
 public:
-  /// \brief Read in data
-  ///
-  /// Reads the data from a file and abort if it is not possible to open the file or if the range of thetas do not give a range between 0 and 2pi. It also computes the derivatives of the energy and stores them in vectors that will be used in W, DW, and DDW
-  ///
-  /// \f[ \int_0^1x^2dx = \frac{1}{3} \f]
-  ///
-  Read(std::string fileName)
+  Read()
   {
-    int i, size;
-    double theta, sigmaW, res;
-    amrex::Real data1, data2; 
-    std::ifstream inFile{fileName};
+    
+  };
+  Read(std::string filename) // remove extra stuff later
+  {
+    std::ifstream ifs{filename};
+    amrex::Real theta, W, res, thetamin, thetamax;
 
-    if (!inFile){
-        Util::Abort (INFO, "UNABLE TO OPEN THE FILE");
-    }
+    if (!ifs){ Util::Abort(INFO, "Unable to open the file."); };
 
-    while (inFile >> theta >> sigmaW){
-      if (theta != 360){
-        theta = fmod(theta, 360.0);
-      }
-
-      data1 = theta * pi / 180;
-      data2 = sigmaW;
-      
-      thetas.push_back(data1);
-      sigmasW.push_back(data2);
-    }
+    while(ifs >> theta >> W){                   // reads data.
+      thetas.push_back(fmod(theta, 360) * PI / 180);
+      Ws.push_back(W);
+    };
 
     size = thetas.size();
-    res = thetas[1]-thetas[0];
+    res = thetas[1] - thetas[0];
+    thetamin = thetas[0];
+    thetamax = thetas[0];
 
-    if((thetas[size-1]+res) < (2*pi - res / 2)){
-	    Util::Abort(INFO, std::to_string(thetas[size-1]+res) + " vs " + std::to_string(2*pi + res / 2) + ", FILE DOES NOT CONTAIN THE WHOLE RANGE OF THETAS FROM 0 TO 2PI");
-    }
-    
-    //Create vector sigmas DW    
-    for(i=0; i<size; i++){
-      if(i==(size-1)){
-     	sigmasDW.push_back((sigmasW[0]-sigmasW[i])/(2*pi + thetas[0]-thetas[i]));
-      }
-      else{
-	sigmasDW.push_back((sigmasW[i+1]-sigmasW[i])/(thetas[i+1]-thetas[i]));
-    }
-  }
+    for (i = 1; i < size; i++){                 // checks for full range of thetas.
+      if (thetas[i] < thetamin){thetamin = thetas[i]; };
+      if (thetas[i] > thetamax){thetamax = thetas[i]; };
+    };
+    if ((thetamax - thetamin + res) < 2.0*PI){
+      Util::Abort(INFO, "Input file doesn't cover full range of thetas (0 to 2PI).");
+    };
 
-    //Create vector sigmas DDW
-    for(i=0; i<size; i++){
-      if(i==(size-1)){
-	sigmasDDW.push_back((sigmasDW[0]-sigmasDW[i])/(2*pi + thetas[0]-thetas[i]));
-      }
-      else{
-	sigmasDDW.push_back((sigmasDW[i+1]-sigmasDW[i])/(thetas[i+1]-thetas[i]));
-      }
-    }
+    DWs.push_back((Ws[1] - Ws[0]) / res);       // takes derivatives.
+    for (i = 1; i < size; i++){
+      DWs.push_back((Ws[(i+1) % size] - Ws[i]) / res);
+      DDWs.push_back((DWs[i] - DWs[i-1]) / res);
+    };
+    DDWs.push_back((DWs[0] - DWs[size-1]) / res);
+
+    /* for (i = 0; i < size; i++) {
+      Util::Warning(INFO, "\n theta: ", thetas[i], "   W: ", Ws[i], "  DW: ", DWs[i], " DDW: ", DDWs[i]);
+    };
+    Util::Abort(INFO, "meep"); */
   };
 
   amrex::Real W(amrex::Real theta)
   {
-    // put in code so that 0 <= theta < 2*pi
-    if(theta>=2*pi)
-      {
-	int div=theta/(2*pi);
-	theta=theta-(div*2*pi);
-      }
-    else if(theta<0)
-      {
-	int div=fabs(theta)/(2*pi);
-	theta=theta+((div+1)*2*pi);
-      }
-    
-    //Find out the value of theta inside our vector thetas
-    
-    for(int i=0; i<size; i++){
-      if(i==(size-1)){
-	if(theta >= thetas[i]){
-	  //Interpolate to get the value of sigma
-	  return ((theta-thetas[i])*(sigmasW[0]-sigmasW[i])/(2*pi+thetas[0]-thetas[i]))+sigmasW[i];
-	}
-      }
-      else{
-	if(theta >= thetas[i] && theta < thetas[i+1]){
-	  //Interpolate to get the value of sigma	  
-	  return ((theta-thetas[i])*(sigmasW[i+1]-sigmasW[i])/(thetas[i+1]-thetas[i]))+sigmasW[i];
-	}
-      } 
-    }
-    return 0;
+    amrex::Real W{interpolate(theta, Ws)};
+    /* if (std::isnan(W)) */ Util::Abort(INFO, " W nan: ", W, " type ", typeid(W).name());
+    return W;
   };
   amrex::Real DW(amrex::Real theta)
   {
-   // put in code so that 0 <= theta < 2*pi
-    if(theta>=2*pi)
-      {
-	int div=theta/(2*pi);
-	theta=theta-(div*2*pi);
-      }
-    else if(theta<0)
-      {
-	int div=fabs(theta)/(2*pi);
-	theta=theta+((div+1)*2*pi);
-      }
-    
-    //Find out the value of theta inside our vector thetas
-    
-    for(int i=0; i<size; i++){
-      if(i==(size-1)){
-	if(theta >= thetas[i]){
-	  //Interpolate to get the value of sigma
-	  return ((theta-thetas[i])*(sigmasDW[0]-sigmasDW[i])/(2*pi+thetas[0]-thetas[i]))+sigmasDW[i];
-	}
-      }
-      else{
-	if(theta >= thetas[i] && theta < thetas[i+1]){
-	  //Interpolate to get the value of sigma	  
-	  return ((theta-thetas[i])*(sigmasDW[i+1]-sigmasDW[i])/(thetas[i+1]-thetas[i]))+sigmasDW[i];
-	}
-      } 
-    }
-    return 0;
+    return interpolate(theta, DWs);
   };
   amrex::Real DDW(amrex::Real theta)
   {
-    // put in code so that 0 <= theta < 2*pi
-    if(theta>=2*pi)
-      {
-	int div=theta/(2*pi);
-	theta=theta-(div*2*pi);
-      }
-    else if(theta<0)
-      {
-	int div=fabs(theta)/(2*pi);
-	theta=theta+((div+1)*2*pi);
-      }
-    
-    //Find out the value of theta inside our vector thetas
-    
-    for(int i=0; i<size; i++){
-      if(i==(size-1)){
-	if(theta >= thetas[i]){
-	  //Interpolate to get the value of sigma
-	  return ((theta-thetas[i])*(sigmasDDW[0]-sigmasDDW[i])/(2*pi+thetas[0]-thetas[i]))+sigmasDDW[i];
-	}
-      }
-      else{
-	if(theta >= thetas[i] && theta < thetas[i+1]){
-	  //Interpolate to get the value of sigma	  
-	  return ((theta-thetas[i])*(sigmasDDW[i+1]-sigmasDDW[i])/(thetas[i+1]-thetas[i]))+sigmasDDW[i];
-	}
-      } 
-    }
-    return 0;
-  }; 
-
+    return interpolate(theta, DDWs);
+  };
+ 
 private:
-  std::vector<amrex::Real> thetas, sigmasW, sigmasDW, sigmasDDW;
-  int size;
+  int i, size;
+  std::vector<amrex::Real> thetas, Ws, DWs, DDWs;
+
+  amrex::Real interpolate(amrex::Real theta, std::vector<amrex::Real> data)
+  {
+    int revs, lo_index{0}, hi_index{size - 1};
+    amrex::Real data_pt;
+
+    revs = fabs(theta) / (2*PI);
+    if (theta > 2*PI){ theta -= (revs*2*PI); };
+    if (theta < 0){ theta += ((revs+1)*2*PI); };
+
+    for (i = 0; i < size; i++){
+      if ((thetas[i] > thetas[lo_index]) && (thetas[i] < theta)) { lo_index = i; };
+      if ((thetas[i] < thetas[hi_index]) && (thetas[i] > theta)) { hi_index = i; };
+    };
+
+    data_pt = ((theta - thetas[lo_index]) / (thetas[hi_index]- thetas[lo_index])) * (data[hi_index] - data[lo_index]) + data[lo_index];
+    
+    //Util::Abort(INFO, " datapt ", data_pt, " type ", typeid(data_pt).name());
+    return data_pt;
+  };
 };
 }
 }
 }
+
 #endif
