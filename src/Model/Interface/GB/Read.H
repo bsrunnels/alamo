@@ -64,27 +64,27 @@ public:
 
   amrex::Real W(amrex::Real theta)
   {
-    amrex::Real W{interpolate(theta, Ws)};
-    /* if (std::isnan(W)) */ Util::Abort(INFO, " W nan: ", W, " type ", typeid(W).name());
-    return W;
+    amrex::Real Wumbo{interpolate(theta, Ws)};
+    return Wumbo;
   };
   amrex::Real DW(amrex::Real theta)
   {
-    return interpolate(theta, DWs);
+    amrex::Real DWumbo{interpolate(theta, DWs)};
+    return DWumbo;
   };
   amrex::Real DDW(amrex::Real theta)
   {
-    return interpolate(theta, DDWs);
+    amrex::Real DDWumbo{interpolate(theta, DDWs)};
+    return DDWumbo;
   };
  
 private:
   int i, size;
   std::vector<amrex::Real> thetas, Ws, DWs, DDWs;
 
-  amrex::Real interpolate(amrex::Real theta, std::vector<amrex::Real> data)
+  double interpolate(amrex::Real theta, std::vector<amrex::Real> data)
   {
     int revs, lo_index{0}, hi_index{size - 1};
-    amrex::Real data_pt;
 
     revs = fabs(theta) / (2*PI);
     if (theta > 2*PI){ theta -= (revs*2*PI); };
@@ -95,10 +95,10 @@ private:
       if ((thetas[i] < thetas[hi_index]) && (thetas[i] > theta)) { hi_index = i; };
     };
 
-    data_pt = ((theta - thetas[lo_index]) / (thetas[hi_index]- thetas[lo_index])) * (data[hi_index] - data[lo_index]) + data[lo_index];
-    
-    //Util::Abort(INFO, " datapt ", data_pt, " type ", typeid(data_pt).name());
-    return data_pt;
+    if (hi_index == lo_index){
+      return data[lo_index];
+    }
+    return ((theta - thetas[lo_index]) / (thetas[hi_index]- thetas[lo_index])) * (data[hi_index] - data[lo_index]) + data[lo_index];
   };
 };
 }
