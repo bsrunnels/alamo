@@ -24,7 +24,7 @@ public:
   {
     
   };
-  Read(std::string filename) // remove extra stuff later
+  Read(std::string filename)
   {
     std::ifstream ifs{filename};
     amrex::Real theta, W, res, thetamin, thetamax;
@@ -55,11 +55,6 @@ public:
       DDWs.push_back((DWs[i] - DWs[i-1]) / res);
     };
     DDWs.push_back((DWs[0] - DWs[size-1]) / res);
-
-    /* for (i = 0; i < size; i++) {
-      Util::Warning(INFO, "\n theta: ", thetas[i], "   W: ", Ws[i], "  DW: ", DWs[i], " DDW: ", DDWs[i]);
-    };
-    Util::Abort(INFO, "meep"); */
   };
 
   amrex::Real W(amrex::Real theta)
@@ -82,7 +77,7 @@ private:
   int i, size;
   std::vector<amrex::Real> thetas, Ws, DWs, DDWs;
 
-  double interpolate(amrex::Real theta, std::vector<amrex::Real> data)
+  double interpolate(amrex::Real theta, std::vector<amrex::Real> data)  //interpolates to get data between the points.
   {
     int revs, lo_index{0}, hi_index{size - 1};
 
