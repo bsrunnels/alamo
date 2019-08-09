@@ -22,7 +22,6 @@ class Read : public GB
 public:
   Read()
   {
-    
   };
   Read(std::string filename)
   {
@@ -39,13 +38,9 @@ public:
     size = thetas.size();
     res = thetas[1] - thetas[0];
     thetamin = thetas[0];
-    thetamax = thetas[0];
+    thetamax = thetas[size - 1];
 
-    for (i = 1; i < size; i++){                 // checks for full range of thetas.
-      if (thetas[i] < thetamin){thetamin = thetas[i]; };
-      if (thetas[i] > thetamax){thetamax = thetas[i]; };
-    };
-    if ((thetamax - thetamin + res) < 2.0*PI){
+    if ((thetamax - thetamin + res) < 2.0*PI){                      // checks for full range of thetas.
       Util::Abort(INFO, "Input file doesn't cover full range of thetas (0 to 2PI).");
     };
 
