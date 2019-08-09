@@ -27,7 +27,7 @@ public:
   Read(std::string filename)
   {
     std::ifstream ifs{filename};
-    amrex::Real theta, W, res, thetamin, thetamax;
+    amrex::Real theta, W, res;
 
     if (!ifs){ Util::Abort(INFO, "Unable to open the file."); };
 
@@ -59,45 +59,42 @@ public:
 
   amrex::Real W(amrex::Real theta)
   {
-    amrex::Real Wumbo{interpolate(theta, Ws)};
-    return Wumbo;
+    return interpolate(theta, Ws);
   };
   amrex::Real DW(amrex::Real theta)
   {
-    amrex::Real DWumbo{interpolate(theta, DWs)};
-    return DWumbo;
+    return interpolate(theta, DWs);
   };
   amrex::Real DDW(amrex::Real theta)
   {
-    amrex::Real DDWumbo{interpolate(theta, DDWs)};
-    return DDWumbo;
+    return interpolate(theta, DDWs);
   };
  
 private:
   int i, size;
   std::vector<amrex::Real> thetas, Ws, DWs, DDWs;
+  amrex:: Real thetamin, thetamax;
 
   double interpolate(amrex::Real theta, std::vector<amrex::Real> data)  //interpolates to get data between the points.
   {
-    int revs, lo_index{0}, hi_index{size - 1};
+    int revs, hi_index;
+    double lo_index;
 
     revs = fabs(theta) / (2*PI);
     if (theta > 2*PI){ theta -= (revs*2*PI); };
     if (theta < 0){ theta += ((revs+1)*2*PI); };
 
-    for (i = 0; i < size; i++){
-      if ((thetas[i] > thetas[lo_index]) && (thetas[i] < theta)) { lo_index = i; };
-      if ((thetas[i] < thetas[hi_index]) && (thetas[i] > theta)) { hi_index = i; };
-    };
+    lo_index = theta / thetamax * size;
+    if (fmod(lo_index, 1) == 0) { return data[lo_index]; };
+    
+    lo_index = int(lo_index);
+    hi_index = lo_index + 1;
 
-    if (hi_index == lo_index){
-      return data[lo_index];
-    }
+    if (thetas[hi_index] == thetas[lo_index]) { return data[lo_index]; };
     return ((theta - thetas[lo_index]) / (thetas[hi_index]- thetas[lo_index])) * (data[hi_index] - data[lo_index]) + data[lo_index];
   };
 };
 }
 }
 }
-
 #endif
