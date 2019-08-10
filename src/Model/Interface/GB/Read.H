@@ -38,9 +38,13 @@ public:
     size = thetas.size();
     res = thetas[1] - thetas[0];
     thetamin = thetas[0];
-    thetamax = thetas[size - 1];
+    thetamax = thetas[0];
+    
+    for (i = 0; i < size; i++){
+      if (thetas[i] > thetamax) { thetamax = thetas[i]; };
+    }
 
-    if ((thetamax - thetamin + res) < 2.0*PI){                      // checks for full range of thetas.
+    if ((thetamax - thetamin + res) < 2.0*PI){
       Util::Abort(INFO, "Input file doesn't cover full range of thetas (0 to 2PI).");
     };
 
