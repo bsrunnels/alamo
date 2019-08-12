@@ -37,12 +37,12 @@ anisotropy.on=1
 anisotropy.timestep=.001
 anisotropy.tstart= 1.
 anisotropy.theta0= 45
-anisotropy.sigma0= 0.1
-anisotropy.sigma1= 0.25
-anisotropy.frequency= 4
+anisotropy.sigma0=0.075
+anisotropy.sigma1=0.07
+anisotropy.frequency= 4.0
 anisotropy.beta= 1e-5
 anisotropy.damp=.01
-anisotropy.gb_type="read"
+anisotropy.gb_type=sin
 anisotropy.filename=tests/PerturbedInterface/shallow_abssin_theta0_45_FINERES_FWHM_5.txt
 
 elastic.on=0
