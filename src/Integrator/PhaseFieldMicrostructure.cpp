@@ -55,8 +55,6 @@ PhaseFieldMicrostructure::PhaseFieldMicrostructure() : Integrator()
 		}
 	}
 	{
-		amrex::Real theta0,sigma0,sigma1, frequency;
-
 		amrex::ParmParse pp("anisotropy"); // Phase-field model parameters
 		pp.query("on", anisotropy.on);
 		pp.query("theta0", anisotropy.theta0);
