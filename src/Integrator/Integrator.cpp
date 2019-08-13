@@ -28,7 +28,6 @@ Integrator::Integrator ()
 		ParmParse pp("amr"); // AMR specific parameters
 		pp.query("regrid_int", regrid_int);     // ALL processors
 		pp.query("plot_int", plot_int);         // ALL processors
-		pp.query("thermo_int", thermo.interval);         // ALL processors
 		pp.query("plot_dt", plot_dt);         // ALL processors
 		pp.query("plot_file", plot_file);       // IO Processor only
 
@@ -60,7 +59,6 @@ Integrator::Integrator ()
 		pp.query("int", thermo.interval);     // ALL processors
 		pp.query("plot_int", thermo.plot_int);         // ALL processors
 		pp.query("plot_dt", thermo.plot_dt);         // ALL processors
-		if (thermo.plot_dt < 0){thermo.plot_dt *= -1;};  // make sure amr.thermo.plot_dt is positive
 		Util::Message(INFO,thermo.plot_int," ",thermo.plot_dt);
 	}
 
@@ -752,7 +750,6 @@ Integrator::IntegrateVariables (Real time, int step)
 			amrex::ParallelDescriptor::ReduceRealSum(*thermo.vars[i]);
 		}
 	}
-
 	
 	if ( ParallelDescriptor::IOProcessor() &&
 		 (

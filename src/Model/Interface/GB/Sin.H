@@ -9,8 +9,6 @@
 #include "Set/Set.H"
 #include "Util/Util.H"
 
-#define PI 3.14159265 
-
 namespace Model
 {
 namespace Interface
@@ -43,8 +41,6 @@ public:
 	};
 	amrex::Real W(amrex::Real theta)
 	{
-		//if(std::isnan(sigma0 + 0.5*sigma1*(1.0 - cos(frequency*(theta-theta0))))) Util::Abort(INFO, "sigma0: ", sigma0, "\n sigma1: ", sigma1, "\n frequency: ", frequency, "\n theta0: ", theta0, "\n theta: ", theta);
-		//Util::Abort(INFO, theta0, sigma0, sigma1, frequency);
 		return sigma0 + 0.5*sigma1*(1.0 - cos(frequency*(theta-theta0)));
 	};
 	amrex::Real DW(amrex::Real theta)

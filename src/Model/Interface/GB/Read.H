@@ -4,7 +4,6 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <typeinfo> 
 
 #include "AMReX.H"
 #include "GB.H"
