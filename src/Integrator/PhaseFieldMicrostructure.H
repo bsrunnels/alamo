@@ -98,7 +98,7 @@ private:
 		int plot_int = -1;
 		Set::Scalar plot_dt = -1.0;
 		int thermo_int = -1, thermo_plot_int = -1;
-		Set::Scalar theta0 = NAN, sigma0 = NAN, sigma1 = NAN, frequency = NAN;
+		Set::Scalar theta0 = NAN, sigma0 = NAN, sigma1 = NAN, frequency = NAN; //set nan here instead of in abssin.h, sin.h (since otherwise unspec vals become random constant, never nan)
 		Set::Scalar phi0 = 0.0;
 	} anisotropy;
 	
