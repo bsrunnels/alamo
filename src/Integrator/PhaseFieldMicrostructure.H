@@ -98,7 +98,7 @@ private:
 		int plot_int = -1;
 		Set::Scalar plot_dt = -1.0;
 		int thermo_int = -1, thermo_plot_int = -1;
-		Set::Scalar theta0,sigma0,sigma1,frequency;
+		Set::Scalar theta0 = NAN, sigma0 = NAN, sigma1 = NAN, frequency = NAN;
 		Set::Scalar phi0 = 0.0;
 	} anisotropy;
 	
@@ -110,6 +110,8 @@ private:
 	} lagrange;
 
 	std::string ic_type, gb_type, filename;
+	bool auto_translate = false;
+	double FWHM = NAN;
 
 	Model::Interface::GB::GB *boundary;
 

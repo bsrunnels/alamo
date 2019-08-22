@@ -55,6 +55,8 @@ PhaseFieldMicrostructure::PhaseFieldMicrostructure() : Integrator()
 		pp.query("phi0", anisotropy.phi0);
 		pp.query("filename", filename);
 		pp.query("gb_type", gb_type);
+		pp.query("auto_translate", auto_translate); // if given, auto_translate will use anisotropy.sigma0, sigma1 to scale the data.
+		pp.query("FWHM", FWHM);
 		anisotropy.theta0 *= 0.01745329251; // convert degrees into radians
 		anisotropy.phi0 *= 0.01745329251; // convert degrees into radians
 		pp.query("sigma0", anisotropy.sigma0);
@@ -88,9 +90,13 @@ PhaseFieldMicrostructure::PhaseFieldMicrostructure() : Integrator()
 									anisotropy.sigma0,
 									anisotropy.sigma1,
 									anisotropy.frequency);
-		else if(gb_type=="read")
-			boundary = new Model::Interface::GB::Read(filename);
-
+		else if(gb_type=="read"){
+			boundary = new Model::Interface::GB::Read(filename, 
+									auto_translate,
+									anisotropy.sigma0, 
+									anisotropy.sigma1,
+									FWHM);
+		}
 		else if(gb_type == "sh")
 		{
 			//Need to make this check for other gb_types as well.

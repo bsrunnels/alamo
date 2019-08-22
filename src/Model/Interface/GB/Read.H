@@ -22,10 +22,10 @@ public:
   Read()
   {
   };
-  Read(std::string filename)
+  Read(std::string filename, bool translate, amrex::Real _sigma0, amrex::Real _sigma1, amrex::Real _FWHM)
   {
     std::ifstream ifs{filename};
-    amrex::Real theta, W, res;
+    amrex::Real theta, W;
 
     if (!ifs){ Util::Abort(INFO, "Unable to open the file."); };
 
@@ -47,6 +47,19 @@ public:
       Util::Abort(INFO, "Input file doesn't cover full range of thetas (0 to 2PI).");
     };
 
+    if (translate){
+      Define(_sigma0, _sigma1, _FWHM);
+
+      
+      Util::Abort(INFO, sigma0, sigma1, FWHM);
+      //algorithm!!
+
+      //modfile(filename, thetas, Ws);
+      Util::Abort(INFO, "got to line 52!");
+    };
+
+    Util::Abort(INFO, "passed line 52 :)");
+
     DWs.push_back((Ws[1] - Ws[0]) / res);       // takes derivatives.
     for (i = 1; i < size; i++){
       DWs.push_back((Ws[(i+1) % size] - Ws[i]) / res);
@@ -67,11 +80,22 @@ public:
   {
     return interpolate(theta, DDWs);
   };
+
+  void Define(amrex::Real _sigma0, amrex::Real _sigma1, amrex::Real _FWHM)
+	{
+		sigma0 = _sigma0;
+		sigma1 = _sigma1;
+		FWHM = _FWHM;
+    if (std::isnan(sigma0)){sigma0 = 0.125; };
+    if (std::isnan(sigma1)){sigma1 = 0.2; };
+    if (std::isnan(FWHM)){FWHM = 5.0; };
+	};
  
 private:
   int i, size;
+  double res;
   std::vector<amrex::Real> thetas, Ws, DWs, DDWs;
-  amrex:: Real thetamin, thetamax;
+  amrex::Real thetamin, thetamax, sigma0, sigma1, FWHM;
 
   double interpolate(amrex::Real theta, std::vector<amrex::Real> data)  //interpolates to get data between the points.
   {
@@ -91,6 +115,24 @@ private:
     if (thetas[hi_index] == thetas[lo_index]) { return data[lo_index]; };
     return ((theta - thetas[lo_index]) / (thetas[hi_index]- thetas[lo_index])) * (data[hi_index] - data[lo_index]) + data[lo_index];
   };
+
+  int modfile(std::string filename, std::vector<double> data1, std::vector<double> data2)   // makes the modified file for autotranslate
+  {
+    for (i = 0; i < 4; i++){ filename.pop_back(); };
+    filename.append("-mod.txt");
+
+    std::ofstream ofs{filename};
+    //if(!ofs){Util::Abort(INFO, "didn't create file"); }
+    //else{Util::Abort(INFO, "opened: " + filename); };
+    
+    for (i = 0; i < size; i++){
+      ofs << data1[i] << " " << data2[i] << "\n";
+    };
+
+    ofs.close();
+    return 0;    //figure out why this doesn't work!
+  };
+  
 };
 }
 }
