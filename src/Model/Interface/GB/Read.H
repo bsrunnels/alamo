@@ -50,7 +50,6 @@ public:
     };
 
     if (translate){                           // smooths, scales, and shifts data
-      bool smooth{true};
       Define(_sigma0, _sigma1, _FWHM);
 
       amrex::Real sigma = FWHM / sqrt(8.0 * log(2.0));

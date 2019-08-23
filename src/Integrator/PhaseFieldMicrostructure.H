@@ -110,7 +110,7 @@ private:
 	} lagrange;
 
 	std::string ic_type, gb_type, filename;
-	bool auto_translate = false;
+	bool translate = false;
 	double FWHM = NAN;
 
 	Model::Interface::GB::GB *boundary;
