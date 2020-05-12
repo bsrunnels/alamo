@@ -77,7 +77,7 @@ material.cubic.C44 = 87.4
 material.cubic.phi1 = 0
 material.cubic.Phi = 0
 material.cubic.phi2 = 0
-elastic.df_mult = 0.25e8
+elastic.df_mult = 0.1e8
 elastic.bottom_solver = bicgstab
 elastic.int = 1
 elastic.composite_solve(nvals = 1)  :: [1]
@@ -112,8 +112,8 @@ elastic.bc.crackStressTest = false
 amrex.throw_exception = 1
 # RUN DETAILS
 # ===========
-HASH = 7239807039935454670
-Simulation_start_time = 2020-05-12 10:32:08
+HASH = 12203272914357213342
+Simulation_start_time = 2020-05-12 11:52:03
 Number_of_processors = 1
-Status = Running
-Simulation_run_time = 91.859 
+Status = Running (1%)
+Simulation_run_time = 3811.44 

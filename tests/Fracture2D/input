@@ -110,7 +110,7 @@ material.cubic.phi1 = 0
 material.cubic.Phi = 0
 material.cubic.phi2 = 0
 
-elastic.df_mult = 0.25e8
+elastic.df_mult = 0.1e8
 
 elastic.bottom_solver 	=	bicgstab
 elastic.int             = 1
