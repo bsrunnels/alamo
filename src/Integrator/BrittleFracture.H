@@ -23,6 +23,8 @@
 
 #include "Model/Solid/Solid.H"
 #include "Model/Solid/Linear/IsotropicDegradable.H"
+#include "Model/Solid/Linear/Cubic.H"
+#include "Model/Solid/Linear/CubicDegradable.H"
 //#include "Model/Solid/LinearElastic/LinearElastic.H"
 //#include "Model/Solid/LinearElastic/Laplacian.H"
 
@@ -49,7 +51,7 @@
 ///    - See #Cylinder or #Constant
 namespace Integrator
 {
-using fracture_model_type = Model::Solid::Linear::IsotropicDegradable;
+using fracture_model_type = Model::Solid::Linear::CubicDegradable;
 class BrittleFracture : public Integrator
 {
 public:
@@ -135,7 +137,7 @@ private:
 	struct{
 		fracture_model_type modeltype;
 		Set::Field<fracture_model_type> model;
-		std::string input_material = "isotropic";
+		std::string input_material = "cubic";
 	} material;
 
 	struct

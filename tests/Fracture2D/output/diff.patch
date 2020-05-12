@@ -1,0 +1,27 @@
+diff --git a/src/Model/Solid/Linear/CubicDegradable.H b/src/Model/Solid/Linear/CubicDegradable.H
+index f401b88e..41da47b3 100644
+--- a/src/Model/Solid/Linear/CubicDegradable.H
++++ b/src/Model/Solid/Linear/CubicDegradable.H
+@@ -20,7 +20,7 @@ public:
+     //CubicDegradable(Cubic base) : Cubic(base) {};
+     CubicDegradable(Set::Scalar C11, Set::Scalar C12, Set::Scalar C44, Set::Scalar phi1, Set::Scalar Phi, Set::Scalar phi2)
+     {
+-    	Define(C11,C11,C12,C12,C44,C44,phi1,Phi,phi2);
++    	Define(C11,C11,C12,C12,C44,C44,phi1,phi1,Phi,Phi,phi2,phi2);
+     };
+ 
+ 
+@@ -82,11 +82,11 @@ public:
+             return;
+         }
+ 
+-        Set::Scalar phi1 = 0, Phi = 0, phi2 = 0;
++        Set::Scalar phi1, Phi, phi2;
+         pp.query("phi1",phi1);
+         pp.query("Phi",Phi);
+         pp.query("phi2",phi2);
+-        value.Define(C11,C11,C12,C12,C44,C44,phi1,Phi,phi2);
++        value.Define(C11,C11,C12,C12,C44,C44,phi1,phi1,Phi,Phi,phi2,phi2);
+     }
+ };
+ 

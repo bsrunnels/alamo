@@ -34,8 +34,8 @@ crack.refinement_threshold = 0.01
 #crack.constant.threshold = 0
 
 crack.type = sin
-crack.sin.Gc0 = 1.0e3
-crack.sin.Gc1 = 2.0e2
+crack.sin.Gc0 = 1.2e3
+crack.sin.Gc1 = 7.0e2
 crack.sin.theta0 = 0.785
 crack.sin.zeta = 2.e-3
 crack.sin.mobility = 1.e-5
@@ -72,7 +72,7 @@ ic.type = notch
 
 # Enable for a single notch
 ic.notch.center = 0.0 0.0
-ic.notch.orientation = 1.0 0.0
+ic.notch.orientation = 1.0 1.0
 ic.notch.length = 0.5
 ic.notch.thickness = 4.e-2
 
@@ -98,10 +98,19 @@ crack.bc_df.val.xhi = 0.0 0.0 0.0 0.0
 crack.bc_df.val.ylo = 0.0 0.0 0.0 0.0
 crack.bc_df.val.yhi = 0.0 0.0 0.0 0.0
 
-material.model = isotropic
-material.isotropic.lambda = 5.80
-material.isotropic.mu = 3.85 
-elastic.df_mult = 1.0e8
+#material.model = isotropic
+#material.isotropic.lambda = 5.80
+#material.isotropic.mu = 3.85 
+
+material.model = cubic
+material.cubic.C11 = 287.6
+material.cubic.C12 = 151.4
+material.cubic.C44 = 87.4
+material.cubic.phi1 = 0
+material.cubic.Phi = 0
+material.cubic.phi2 = 0
+
+elastic.df_mult = 0.25e8
 
 elastic.bottom_solver 	=	bicgstab
 elastic.int             = 1

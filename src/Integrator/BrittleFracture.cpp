@@ -91,6 +91,10 @@ BrittleFracture::BrittleFracture() :
 	{
 		pp_material.queryclass("isotropic",material.modeltype);
 	}
+	else if(material.input_material == "cubic")
+	{
+		pp_material.queryclass("cubic",material.modeltype);
+	}
 	else
 		Util::Abort(INFO,"This model has not been implemented yet.");
 
@@ -396,8 +400,9 @@ BrittleFracture::Advance (int lev, amrex::Real time, amrex::Real dt)
 				if( std::isinf(ws)) ws = 1.0E6;
 
 				Set::Scalar Boundary_term = 0.;
+
 				Boundary_term += crack.boundary->Gc(Theta)*crack.boundary->Dw_phi(c_old(i,j,k,0),0.)/(4.0*crack.boundary->Zeta(Theta));
-				Boundary_term -= 2.0*crack.boundary->Zeta(Theta)*laplacian;
+				Boundary_term -= 2.0*crack.boundary->Gc(Theta)*crack.boundary->Zeta(Theta)*laplacian;
 
 				Boundary_term += crack.boundary->DGc(Theta)
 								* (zeta - ws)
