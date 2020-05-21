@@ -111,7 +111,7 @@ public:
 				for (int i = 0; i<a_radius.size(); i+=AMREX_SPACEDIM)
 				{
 					Set::Matrix temp = Set::Matrix::Zero();
-					AMREX_D_TERM( temp(0,0) = 1./a_radius[i] ;, temp(1,1) = 1./a_radius[i+1] ;, temp(2,2) = 1./a_radius[i+2] ; );
+					AMREX_D_TERM( temp(0,0) = 1./a_radius[i] /a_radius[i];, temp(1,1) = 1./a_radius[i+1] / a_radius[i+1];, temp(2,2) = 1./a_radius[i+2] / a_radius[i+2] ; );
 					value.A.push_back(temp);
 				}
 			}

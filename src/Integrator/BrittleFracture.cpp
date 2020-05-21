@@ -68,13 +68,13 @@ BrittleFracture::BrittleFracture() :
 	// Below are conditions for full simulation.  If this doesn't work, we can
 	// try symmetric simulation.
 	crack.mybc = new BC::Constant(1);
-	crack.mybcdf = new BC::Constant(4);
+	crack.mybcdf = new BC::Constant(8);
 	pp_crack.queryclass("bc",*static_cast<BC::Constant *>(crack.mybc));
 	pp_crack.queryclass("bc_df",*static_cast<BC::Constant *>(crack.mybcdf));
 
 	RegisterNewFab(m_c,     crack.mybc, 1, number_of_ghost_cells+1, "c",		true);
 	RegisterNewFab(m_c_old, crack.mybc, 1, number_of_ghost_cells+1, "c_old",	true);
-	RegisterNewFab(m_driving_force, crack.mybcdf, 4, number_of_ghost_cells+1, "driving_force",true);
+	RegisterNewFab(m_driving_force, crack.mybcdf, 8, number_of_ghost_cells+1, "driving_force",true);
 	
 	crack_err_norm = 0.; crack_err_temp_norm = 0.;
 	crack_err_norm_init = 1.e4; crack_err_temp_norm_init = 1.e4;
@@ -402,17 +402,41 @@ BrittleFracture::Advance (int lev, amrex::Real time, amrex::Real dt)
 				Set::Scalar Boundary_term = 0.;
 
 				Boundary_term += crack.boundary->Gc(Theta)*crack.boundary->Dw_phi(c_old(i,j,k,0),0.)/(4.0*crack.boundary->Zeta(Theta));
+				df(i,j,k,1) = crack.boundary->Gc(Theta)*crack.boundary->Dw_phi(c_old(i,j,k,0),0.)/(4.0*crack.boundary->Zeta(Theta));
+
 				Boundary_term -= 2.0*crack.boundary->Gc(Theta)*crack.boundary->Zeta(Theta)*laplacian;
+				df(i,j,k,2) = 2.0*crack.boundary->Gc(Theta)*crack.boundary->Zeta(Theta)*laplacian;
 
 				Boundary_term += crack.boundary->DGc(Theta)
-								* (zeta - ws)
+								* (zeta)
 								* (sin2Theta*(DDc(0,0)-DDc(1,1)) - 2.0*cos2Theta*DDc(0,1));
+				df(i,j,k,3) = crack.boundary->DGc(Theta)
+								* (zeta)
+								* (sin2Theta*(DDc(0,0)-DDc(1,1)) - 2.0*cos2Theta*DDc(0,1));
+
+				Boundary_term += crack.boundary->DGc(Theta)
+								* (-ws)
+								* (sin2Theta*(DDc(0,0)-DDc(1,1)) - 2.0*cos2Theta*DDc(0,1));
+				df(i,j,k,4) = crack.boundary->DGc(Theta)
+								* (-ws)
+								* (sin2Theta*(DDc(0,0)-DDc(1,1)) - 2.0*cos2Theta*DDc(0,1));
+					
 				Boundary_term += crack.boundary->DDGc(Theta)
-								* (-zeta - ws)
+								* (-zeta)
 								* (sinTheta*sinTheta*DDc(0,0) + cosTheta*cosTheta*DDc(1,1) - sin2Theta*DDc(0,1));
+				df(i,j,k,5) = crack.boundary->DDGc(Theta)
+								* (-zeta)
+								* (sinTheta*sinTheta*DDc(0,0) + cosTheta*cosTheta*DDc(1,1) - sin2Theta*DDc(0,1));				
+				
+				Boundary_term += crack.boundary->DDGc(Theta)
+								* (-ws)
+								* (sinTheta*sinTheta*DDc(0,0) + cosTheta*cosTheta*DDc(1,1) - sin2Theta*DDc(0,1));
+				df(i,j,k,6) = crack.boundary->DDGc(Theta)
+								* (-ws)
+								* (sinTheta*sinTheta*DDc(0,0) + cosTheta*cosTheta*DDc(1,1) - sin2Theta*DDc(0,1));				
 
 				if(std::isnan(Boundary_term)) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
-				df(i,j,k,1) = Boundary_term;
+				
 				rhs += Boundary_term;
 
 
@@ -424,7 +448,7 @@ BrittleFracture::Advance (int lev, amrex::Real time, amrex::Real dt)
 						DDDDc(1,1,1,1)*(    cosTheta*cosTheta*cosTheta*cosTheta);
 
 				if(std::isnan(Curvature_term)) Util::Abort(INFO,"nan at m=",i,",",j,",",k);
-				df(i,j,k,2) = anisotropy.beta*Curvature_term;
+				df(i,j,k,7) = anisotropy.beta*Curvature_term;
 				rhs += anisotropy.beta*Curvature_term;
 				
 				

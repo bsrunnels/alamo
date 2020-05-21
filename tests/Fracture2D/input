@@ -1,21 +1,21 @@
 alamo.program = brittlefracture
 
-timestep = 1e-1
+timestep = 4.e-4
 stop_time = 1.e2
 plot_file = tests/Fracture2D/output
 
 amr.plot_int = 1
 amr.max_level = 6
 #amr.n_cell = 512 512
-amr.n_cell = 128 128 
-amr.blocking_factor = 32
+amr.n_cell = 256 32
+amr.blocking_factor = 16
 amr.regrid_int = 10
 amr.grid_eff = 1.0
 
 amr.thermo.int = 1
 
-geometry.prob_lo = -4.0 -4.0
-geometry.prob_hi = 4.0 4.0
+geometry.prob_lo = -0.8 -0.1
+geometry.prob_hi = 0.8 0.1
 geometry.is_periodic= 0 0
 
 crack.modulus_scaling_max = 0.02
@@ -31,39 +31,40 @@ crack.refinement_threshold = 0.01
 #crack.constant.gtype = 4c3
 #crack.constant.wtype = square
 #crack.constant.exponent = 1.e-3
-#crack.constant.threshold = 0
+#crack.constant.threshold = 1.e6
 
 crack.type = sin
-crack.sin.Gc0 = 1.2e3
-crack.sin.Gc1 = 7.0e2
-crack.sin.theta0 = 0.785
-crack.sin.zeta = 2.e-3
-crack.sin.mobility = 1.e-5
+crack.sin.Gc0 = 932.2
+crack.sin.Gc1 = 225.2
+crack.sin.theta0 = 0.196
+crack.sin.zeta = 0.01
+crack.sin.mobility = 5.e-7
 crack.sin.eta_epsilon = 0.01
 crack.sin.mult_Gc = 1.0e0
 crack.sin.mult_Lap = 1.0e0
-crack.constant.gtype = square
-crack.constant.wtype = square
-crack.constant.exponent = 1.e-3
-crack.constant.threshold = 0
+crack.sin.gtype = square
+crack.sin.wtype = square
+crack.sin.exponent = 1.e-3
+crack.sin.threshold = 0.0
 
 anisotropy.on = true
-anisotropy.tstart = 0.0;
+anisotropy.tstart = 0.0
 anisotropy.timestep = 1e-1
-anisotropy.elastic_int = 1e1
-anisotropy.beta = 1e-4;
+anisotropy.elastic_int = 1.0
+anisotropy.beta = 0.0001
 anisotropy.plot_int = 1
 
 crack.tol_crack = 0.0
 crack.tol_ep = 1e-2
 
-#ic.type = ellipsoid
-#ic.center = 2 2
+ic.type = ellipsoid
+ic.ellipsoid.center = 0.0 0.0
+ic.ellipsoid.radius = 4.e-2 4.e-2
 ##ic.A = 8.0 0.0 0.0 512.0
-#ic.A = 4.0 0.0 0.0 128.0
-#ic.eps = 0.05
+#ic.A = 0.1 0.0 0.0 128.0
+ic.ellipsoid.eps = 200.0
 
-ic.type = notch
+#ic.type = notch
 # Enable for multiple notches
 #ic.notch.center = 0.0 -1.0 0.0 1.0
 #ic.notch.orientation = 1.0 0.0 1.0 0.0
@@ -71,12 +72,12 @@ ic.type = notch
 #ic.notch.thickness = 0.0675 0.0675
 
 # Enable for a single notch
-ic.notch.center = 0.0 0.0
-ic.notch.orientation = 1.0 1.0
-ic.notch.length = 0.5
-ic.notch.thickness = 4.e-2
+#ic.notch.center = 0.0 0.0
+#ic.notch.orientation = 1.0 0.0
+#ic.notch.length = 0.1
+#ic.notch.thickness = 5.e-3
 
-ic.notch.eps = 1.5e-2
+#ic.notch.eps = 1.5e-2
 
 crack.bc.type.xlo = NEUMANN
 crack.bc.type.xhi = NEUMANN
@@ -88,29 +89,29 @@ crack.bc.val.xhi = 0.0
 crack.bc.val.ylo = 0.0 
 crack.bc.val.yhi = 0.0 
 
-crack.bc_df.type.xlo = NEUMANN NEUMANN NEUMANN NEUMANN
-crack.bc_df.type.xhi = NEUMANN NEUMANN NEUMANN NEUMANN
-crack.bc_df.type.ylo = NEUMANN NEUMANN NEUMANN NEUMANN
-crack.bc_df.type.yhi = NEUMANN NEUMANN NEUMANN NEUMANN
+crack.bc_df.type.xlo = NEUMANN NEUMANN NEUMANN NEUMANN NEUMANN NEUMANN NEUMANN NEUMANN
+crack.bc_df.type.xhi = NEUMANN NEUMANN NEUMANN NEUMANN NEUMANN NEUMANN NEUMANN NEUMANN
+crack.bc_df.type.ylo = NEUMANN NEUMANN NEUMANN NEUMANN NEUMANN NEUMANN NEUMANN NEUMANN
+crack.bc_df.type.yhi = NEUMANN NEUMANN NEUMANN NEUMANN NEUMANN NEUMANN NEUMANN NEUMANN
 
-crack.bc_df.val.xlo = 0.0 0.0 0.0 0.0
-crack.bc_df.val.xhi = 0.0 0.0 0.0 0.0
-crack.bc_df.val.ylo = 0.0 0.0 0.0 0.0
-crack.bc_df.val.yhi = 0.0 0.0 0.0 0.0
+crack.bc_df.val.xlo = 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+crack.bc_df.val.xhi = 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+crack.bc_df.val.ylo = 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
+crack.bc_df.val.yhi = 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 
-#material.model = isotropic
-#material.isotropic.lambda = 5.80
-#material.isotropic.mu = 3.85 
+material.model = isotropic
+material.isotropic.lambda = 5.80
+material.isotropic.mu = 3.85 
 
-material.model = cubic
-material.cubic.C11 = 287.6
-material.cubic.C12 = 151.4
-material.cubic.C44 = 87.4
-material.cubic.phi1 = 0
-material.cubic.Phi = 0
-material.cubic.phi2 = 0
+#material.model = cubic
+#material.cubic.C11 = 287.6
+#material.cubic.C12 = 151.4
+#material.cubic.C44 = 87.4
+#material.cubic.phi1 = 0.
+#material.cubic.Phi = 0.
+#material.cubic.phi2 = 0.
 
-elastic.df_mult = 0.1e8
+elastic.df_mult = 1.e8
 
 elastic.bottom_solver 	=	bicgstab
 elastic.int             = 1

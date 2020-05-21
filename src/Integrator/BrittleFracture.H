@@ -22,6 +22,7 @@
 #include "Solver/Nonlocal/Newton.H"
 
 #include "Model/Solid/Solid.H"
+#include "Model/Solid/Linear/Isotropic.H"
 #include "Model/Solid/Linear/IsotropicDegradable.H"
 #include "Model/Solid/Linear/Cubic.H"
 #include "Model/Solid/Linear/CubicDegradable.H"
@@ -51,7 +52,7 @@
 ///    - See #Cylinder or #Constant
 namespace Integrator
 {
-using fracture_model_type = Model::Solid::Linear::CubicDegradable;
+using fracture_model_type = Model::Solid::Linear::IsotropicDegradable;
 class BrittleFracture : public Integrator
 {
 public:
@@ -137,7 +138,7 @@ private:
 	struct{
 		fracture_model_type modeltype;
 		Set::Field<fracture_model_type> model;
-		std::string input_material = "cubic";
+		std::string input_material = "isotropic";
 	} material;
 
 	struct
