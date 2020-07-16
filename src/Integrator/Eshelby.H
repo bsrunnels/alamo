@@ -63,8 +63,8 @@ public:
                 // TODO: figure out how to initialize solvers in
                 // here instead of TimeStepBegin...
 
-                //pp.queryclass("bc",elastic.bc);
-                elastic.bc = BC::Operator::Elastic::Crack(0.01);
+                pp.queryclass("bc",elastic.bc);
+                //elastic.bc = BC::Operator::Elastic::Crack(0.01);
                 pp.query("max_coarsening_level",elastic.max_coarsening_level);
                 pp.query("refinement_criterion",elastic.refinement_criterion);
             }
@@ -84,7 +84,7 @@ protected:
         rhs_mf[lev]->setVal(0.);
     }
 
-    void TimeStepBegin(Set::Scalar, int) override
+    void TimeStepBegin(Set::Scalar, int iter) override
     {
         // Set linear elastic model
         
@@ -94,6 +94,7 @@ protected:
 
             model_mf[lev]->setVal(elastic.model);
 
+            ic->Initialize(lev,eta_mf);
             eta_mf[lev]->FillBoundary();
 
             Set::Vector DX(geom[lev].CellSize());
@@ -148,21 +149,33 @@ protected:
         Set::Vector DX(geom[lev].CellSize());
         Set::Scalar DXnorm = DX.lpNorm<2>();
         a_tags.setVal(amrex::TagBox::CLEAR);
+        amrex::Box domain(geom[lev].Domain());
+        domain.convert(amrex::IntVect::TheNodeVector());
+        domain.grow(-1);
+
         for (amrex::MFIter mfi(*eta_mf[lev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
             amrex::Box bx = mfi.tilebox();
+            bx = bx & domain;
             amrex::Array4<char> const &tags = a_tags.array(mfi);
             amrex::Array4<Set::Scalar> const &eta = eta_mf[lev]->array(mfi);
-            amrex::Array4<Set::Scalar> const &disp = eta_mf[lev]->array(mfi);
+            amrex::Array4<Set::Scalar> const &disp = disp_mf[lev]->array(mfi);
             amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+                    
                 {
-                    Set::Vector grad = Numeric::Gradient(eta, i, j, k, 0, DX.data());
-                    if (grad.lpNorm<2>() * DXnorm > 0.01)
-                        tags(i, j, k) = amrex::TagBox::SET;
+                    //Set::Vector grad = Numeric::Gradient(eta, i, j, k, 0, DX.data());
+                    //if (grad.lpNorm<2>() * DXnorm > 0.01)
+                    //    tags(i, j, k) = amrex::TagBox::SET;
                 }
                 {
-                    Set::Vector grad = Numeric::Gradient(disp, i, j, k, 0, DX.data());
-                    if (grad.lpNorm<2>() * DXnorm > elastic.refinement_criterion)
+                    //Set::Vector grad1 = 
+                    Set::Scalar normgrad = 
+                        (Numeric::Hessian(disp, i, j, k, 0, DX.data()) + 
+                         Numeric::Hessian(disp, i, j, k, 1, DX.data())).lpNorm<2>();
+                    //Set::Scalar normgrad = grad1.lpNorm<2>();
+                    //Set::Vector grad2 = Numeric::Gradient(disp, i, j, k, 1, DX.data());
+                    //Set::Scalar normgrad = grad1.lpNorm<2>() + grad2.lpNorm<2>();
+                    if (normgrad * DXnorm * DXnorm > elastic.refinement_criterion)
                         tags(i, j, k) = amrex::TagBox::SET;
                 }
             });
@@ -188,8 +201,8 @@ private:
     struct {
         Model::Solid::Affine::Isotropic model;
         Solver::Nonlocal::Newton<Model::Solid::Affine::Isotropic> *solver;//(elastic.op);
-        //BC::Operator::Elastic::Constant bc;
-        BC::Operator::Elastic::Crack bc;
+        BC::Operator::Elastic::Constant bc;
+        //BC::Operator::Elastic::Crack bc;
         int max_coarsening_level = 1000000;
         Set::Scalar refinement_criterion = 1.0;
     } elastic;
