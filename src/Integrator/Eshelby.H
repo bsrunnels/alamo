@@ -63,8 +63,8 @@ public:
                 // TODO: figure out how to initialize solvers in
                 // here instead of TimeStepBegin...
 
-                pp.queryclass("bc",elastic.bc);
-                //elastic.bc = BC::Operator::Elastic::Crack(0.01);
+                //pp.queryclass("bc",elastic.bc);
+                elastic.bc = BC::Operator::Elastic::Crack(0.01);
                 pp.query("max_coarsening_level",elastic.max_coarsening_level);
                 pp.query("refinement_criterion",elastic.refinement_criterion);
             }
@@ -201,8 +201,8 @@ private:
     struct {
         Model::Solid::Affine::Isotropic model;
         Solver::Nonlocal::Newton<Model::Solid::Affine::Isotropic> *solver;//(elastic.op);
-        BC::Operator::Elastic::Constant bc;
-        //BC::Operator::Elastic::Crack bc;
+        //BC::Operator::Elastic::Constant bc;
+        BC::Operator::Elastic::Crack bc;
         int max_coarsening_level = 1000000;
         Set::Scalar refinement_criterion = 1.0;
     } elastic;

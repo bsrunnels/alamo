@@ -23,8 +23,8 @@ geometry.is_periodic	    = 0 0 0
 # ellipse configuration
 ic.type        = ellipse
 ic.ellipse.a   = 1.0 0.75 0.5  # ellipse radii
-ic.ellipse.x0  = 0 0 0 # location of ellipse center
-#ic.ellipse.x0  = 1000 1000 1000 # location of ellipse center
+#ic.ellipse.x0  = 0 0 0 # location of ellipse center
+ic.ellipse.x0  = 1000 1000 1000 # location of ellipse center
 ic.ellipse.eps = 0.1 # diffuse boundary
 ic.Finclusion  = 0.001 0 0 0 0.001 0 0 0 0.001 # eigenstrain
 
@@ -35,9 +35,9 @@ elastic.model.nu = 0.3
 elastic.solver.verbose = 2
 elastic.solver.nriters = 1
 
-#elastic.solver.fixed_iter = 20000 #4000
-#elastic.solver.bottom_max_iter = 0
-#elastic.max_coarsening_level = 0
+elastic.solver.fixed_iter = 20000 #4000
+elastic.solver.bottom_max_iter = 0
+elastic.max_coarsening_level = 0
 elastic.refinement_criterion = 0.0001
 
 #elastic.bc.type.ylo = dirichlet dirichlet dirichlet
