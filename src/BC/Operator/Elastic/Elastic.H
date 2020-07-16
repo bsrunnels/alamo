@@ -53,7 +53,10 @@ public:
 		 bool a_homogeneous = false) const
 	{
 		for (int ilev = 0; ilev < a_rhs.size(); ilev++)
-			Init(a_rhs[ilev],a_geom[ilev],a_homogeneous);
+		{
+			if (a_rhs[ilev])
+				Init(a_rhs[ilev],a_geom[ilev],a_homogeneous);
+		}
 	}
 
 	void

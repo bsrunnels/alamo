@@ -13,6 +13,7 @@
 #include "IC/IC.H"
 #include "BC/BC.H"
 #include "BC/Operator/Elastic/Constant.H"
+#include "BC/Operator/Elastic/Crack.H"
 
 #include "IC/Ellipse.H"
 #include "Numeric/Stencil.H"
@@ -62,7 +63,10 @@ public:
                 // TODO: figure out how to initialize solvers in
                 // here instead of TimeStepBegin...
 
-                pp.queryclass("bc",elastic.bc);
+                //pp.queryclass("bc",elastic.bc);
+                elastic.bc = BC::Operator::Elastic::Crack(0.01);
+                pp.query("max_coarsening_level",elastic.max_coarsening_level);
+                pp.query("refinement_criterion",elastic.refinement_criterion);
             }
         }
         
@@ -84,13 +88,15 @@ protected:
     {
         if (finest_level != rhs_mf.size() - 1)
         {
-            Util::Abort(INFO, "amr.max_level is larger than necessary. Set to ", finest_level, " or less");
+            //Util::Abort(INFO, "amr.max_level is larger than necessary. Set to ", finest_level, " or less");
         }
         
         // Set linear elastic model
         
         for (int lev = 0; lev < rhs_mf.size(); ++lev)
         {
+            if (!rhs_mf[lev]) continue;
+
             rhs_mf[lev]->setVal(0.0);
 
             model_mf[lev]->setVal(elastic.model);
@@ -119,6 +125,7 @@ protected:
         elastic.bc.Init(rhs_mf,geom);
 
         amrex::LPInfo info;
+        info.setMaxCoarseningLevel(elastic.max_coarsening_level);
         Operator::Elastic<Model::Solid::Affine::Isotropic::sym> elastic_op(geom, grids, dmap, info);
         elastic_op.SetUniform(false);
         elastic_op.SetBC(&elastic.bc);
@@ -162,7 +169,7 @@ protected:
                 }
                 {
                     Set::Vector grad = Numeric::Gradient(disp, i, j, k, 0, DX.data());
-                    if (grad.lpNorm<2>() * DXnorm > 0.01)
+                    if (grad.lpNorm<2>() * DXnorm > elastic.refinement_criterion)
                         tags(i, j, k) = amrex::TagBox::SET;
                 }
             });
@@ -188,7 +195,10 @@ private:
     struct {
         Model::Solid::Affine::Isotropic model;
         Solver::Nonlocal::Newton<Model::Solid::Affine::Isotropic> *solver;//(elastic.op);
-        BC::Operator::Elastic::Constant bc;
+        //BC::Operator::Elastic::Constant bc;
+        BC::Operator::Elastic::Crack bc;
+        int max_coarsening_level = 1000000;
+        Set::Scalar refinement_criterion = 1.0;
     } elastic;
 
 };
