@@ -4,7 +4,7 @@ timestep = 1e-5
 stop_time = 1e0
 plot_file = output
 
-amr.plot_int = 10000
+amr.plot_int = 1000
 amr.max_level = 0
 amr.n_cell = 2048 2048
 amr.blocking_factor = 8
@@ -94,35 +94,25 @@ loading.val = 2.e-2
 elastic.bc.type.xlo = disp trac
 elastic.bc.type.xhi = trac trac
 
-#elastic.bc.type.xlo = trac disp
-#elastic.bc.type.xhi = trac trac
-#elastic.bc.type.ylo = neumann neumann
-#elastic.bc.type yhi = trac trac
-#elastic.bc.type.xloylo = trac neumann
-#elastic.bc.type.xhiylo = disp disp
-#elastic.bc.type.xloyhi = trac disp
-#elastic.bc.type.xhiyhi = trac trac
-
-elastic.bc.val.xlo = 0.0 8.e-4
-
 # Mode I
 elastic.bc.type.ylo = trac disp
 elastic.bc.type.xloylo = trac disp
 elastic.bc.type.xhiylo = trac disp
-
-#elastic.bc.type.ylo = disp disp
-#elastic.bc.type.xloylo = disp disp
-#elastic.bc.type.xhiylo = disp disp
 
 # Mode I - displacement
 elastic.bc.type.yhi = trac disp
 elastic.bc.type.xloyhi = trac disp
 elastic.bc.type.xhiyhi = trac disp
 
-#elastic.bc.type.yhi = disp disp
-#elastic.bc.type.xloyhi = disp disp
-#elastic.bc.type.xhiyhi = disp disp
-
 elastic.bc.val.yhi = 0.0 8.e-5
 elastic.bc.val.xloyhi = 0.0 8.e-5
 elastic.bc.val.xhiyhi = 0.0 8.e-5
+
+# Mode II - displacement
+#elastic.bc.type.yhi = disp trac
+#elastic.bc.type.xloyhi = disp trac
+#elastic.bc.type.xhiyhi = disp trac
+
+elastic.bc.val.yhi = 8.e-5 0.0 
+elastic.bc.val.xloyhi = 8.e-5 0.0
+elastic.bc.val.xhiyhi = 8.e-5 0.0
