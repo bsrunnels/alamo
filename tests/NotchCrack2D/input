@@ -113,6 +113,6 @@ elastic.bc.val.xhiyhi = 0.0 8.e-5
 #elastic.bc.type.xloyhi = disp trac
 #elastic.bc.type.xhiyhi = disp trac
 
-elastic.bc.val.yhi = 8.e-5 0.0 
-elastic.bc.val.xloyhi = 8.e-5 0.0
-elastic.bc.val.xhiyhi = 8.e-5 0.0
+#elastic.bc.val.yhi = 8.e-5 0.0 
+#elastic.bc.val.xloyhi = 8.e-5 0.0
+#elastic.bc.val.xhiyhi = 8.e-5 0.0
