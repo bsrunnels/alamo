@@ -82,7 +82,7 @@ public:
 
         RegisterNodalFab(crack.field, 1, number_of_ghost_nodes, "crack", true);
         RegisterNodalFab(crack.field_old, 1, number_of_ghost_nodes, "crack_old", true);
-        RegisterNodalFab(crack.driving_force, 4, number_of_ghost_nodes, "driving_force", true);
+        RegisterNodalFab(crack.driving_force, 5, number_of_ghost_nodes, "driving_force", true);
 
         IO::ParmParse pp_material("material");
         pp_material.queryclass("isotropic",material.brittlemodeltype);
@@ -354,20 +354,27 @@ protected:
                     Set::Matrix DDc = Numeric::Hessian(c_old, i, j, k, 0, DX);
                     Set::Scalar laplacian = DDc.trace();
 
+                    Set::Matrix4<AMREX_SPACEDIM, Set::Sym::Full> DDDDEta = Numeric::DoubleHessian<AMREX_SPACEDIM>(c_old, i, j, k, 0, DX);
+                    Set::Scalar bilaplacian = 0.0;
+                    for (int p = 0; p < AMREX_SPACEDIM; p++)
+                        for (int q =0; q < AMREX_SPACEDIM; q++)
+                            bilaplacian += DDDDEta(p,p,q,q);
+
                     df(i,j,k,1) = crack.cracktype->Gc(0.0)*crack.cracktype->Dw_phi(c_old(i,j,k,0),0.0)/(4.0*crack.cracktype->Zeta(0.0))*crack.mult_df_Gc;
                     df(i,j,k,2) = 2.0*crack.cracktype->Zeta(0.0)*crack.cracktype->Gc(0.0)*laplacian*crack.mult_df_lap;
+                    df(i,j,k,3) = 0.5*(crack.cracktype->Zeta(0.0)*crack.cracktype->Zeta(0.0)*crack.cracktype->Zeta(0.0))*bilaplacian;
 
                     rhs += crack.cracktype->Gc(0.0)*crack.cracktype->Dw_phi(c_old(i,j,k,0),0.)/(4.0*crack.cracktype->Zeta(0.0))*crack.mult_df_Gc;
-                    // if(rhs > 1.e10) Util::Abort(INFO, "Very large values of rhs at (",i,",",j,",",k,") = ", rhs, ". c_old(i,j,k,0) = ",c_old(i,j,k,0));
-
+                    
                     rhs -= 2.0*crack.cracktype->Zeta(0.0)*crack.cracktype->Gc(0.0)*laplacian*crack.mult_df_lap;
-                    // if(rhs > 1.e10) Util::Abort(INFO, "Very large values of rhs at (",i,",",j,",",k,") = ", rhs, ". c_old(i,j,k,0) = ",c_old(i,j,k,0), ". laplacian = ", laplacian);
+                    
+                    rhs += 0.5*(crack.cracktype->Zeta(0.0)*crack.cracktype->Zeta(0.0)*crack.cracktype->Zeta(0.0))*bilaplacian;
                     
                     // rhs *= _temp;
                     rhs *= crack.cracktype->g_phi(_temp,0.0);
                     // if(rhs > 1.e10) Util::Abort(INFO, "Very large values of rhs at (",i,",",j,",",k,") = ", rhs, ". c_old(i,j,k,0) = ",c_old(i,j,k,0));
 
-                    df(i,j,k,3) = std::max(0.,rhs - crack.cracktype->DrivingForceThreshold(c_old(i,j,k,0)));
+                    df(i,j,k,4) = std::max(0.,rhs - crack.cracktype->DrivingForceThreshold(c_old(i,j,k,0)));
                     if(std::isnan(rhs)) Util::Abort(INFO, "Dwphi = ", crack.cracktype->Dw_phi(c_old(i,j,k,0),0.0),". c_old(i,j,k,0) = ",c_old(i,j,k,0));
                     c_new(i,j,k,0) = c_old(i,j,k,0) - dt*std::max(0., rhs - crack.cracktype->DrivingForceThreshold(c_old(i,j,k,0)))*crack.cracktype->Mobility(c_old(i,j,k,0));
                 }
