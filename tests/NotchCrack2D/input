@@ -39,7 +39,7 @@ ic.type = notch
 ic.notch.center = -0.01 0 #0.0 0.0
 ic.notch.orientation = 1.0 0.0
 ic.notch.thickness = 0.0003 #0.0002
-ic.notch.length = 0.002 #2.e-3
+ic.notch.length = 0.02 #2.e-3
 ic.notch.eps = 0.00006
 ic.notch.mollifier = erf
 
@@ -121,9 +121,9 @@ elastic.bc.type.xhiylo = disp disp
 elastic.bc.type.yhi    = disp disp
 elastic.bc.type.xloyhi = disp disp
 elastic.bc.type.xhiyhi = disp disp
-elastic.bc.val.yhi     = 0.00016 0 ##0.00008 0.0
-elastic.bc.val.xloyhi  = 0.00016 0 ##0.00008 0.0
-elastic.bc.val.xhiyhi  = 0.00016 0 ##0.00008 0.0
+elastic.bc.val.yhi     = 0.00008 0 ##0.00008 0.0
+elastic.bc.val.xloyhi  = 0.00008 0 ##0.00008 0.0
+elastic.bc.val.xhiyhi  = 0.00008 0 ##0.00008 0.0
 elastic.bc.type.xlo = trac disp
 elastic.bc.type.xhi = trac disp
 
