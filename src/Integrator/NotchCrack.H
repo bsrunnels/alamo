@@ -148,8 +148,8 @@ protected:
         elastic.energy_pristine[ilev] -> setVal(0.);
         elastic.energy_pristine_old[ilev] -> setVal(0.);
 
-        crack.ic->Initialize(ilev,material.modulus_field);
-        // material.modulus_field[ilev]->setVal(1.0);
+        //crack.ic->Initialize(ilev,material.modulus_field);
+        material.modulus_field[ilev]->setVal(1.0);
         crack.ic->Initialize(ilev,crack.field);
         crack.ic->Initialize(ilev,crack.field_old);
         // crack.field[ilev]->setVal(1.0);
@@ -235,7 +235,6 @@ protected:
             solver.setMaxFmgIter(sol.max_fmg_iter);
             solver.setFixedIter(sol.max_fixed_iter);
             solver.setVerbose(sol.verbose);
-            solver.setCGVerbose(sol.cgverbose);
             solver.setBottomMaxIter(sol.bottom_max_iter);
             solver.setBottomTolerance(sol.cg_tol_rel) ;
             solver.setBottomToleranceAbs(sol.cg_tol_abs) ;
@@ -246,11 +245,6 @@ protected:
             solver.solve(elastic.disp, elastic.rhs, material.brittlemodel, sol.tol_rel, sol.tol_abs);
             solver.compResidual(elastic.residual,elastic.disp,elastic.rhs,material.brittlemodel);
             
-            if (iter == 0)
-            {
-                solver.solve(elastic.disp, elastic.rhs, material.brittlemodel, sol.tol_rel, sol.tol_abs);
-                solver.compResidual(elastic.residual,elastic.disp,elastic.rhs,material.brittlemodel);
-            }
         }
         
         for (int ilev = 0; ilev < nlevels; ilev++)
@@ -388,23 +382,25 @@ protected:
         const amrex::Real *DX = geom[lev].CellSize();
         const Set::Vector dx(DX);
         const Set::Scalar dxnorm = dx.lpNorm<2>();
+        amrex::Box domain(geom[lev].Domain());
+        domain.convert(amrex::IntVect::TheNodeVector());
 
-        for (amrex::MFIter mfi(*material.modulus_field[lev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
-        {
-            const amrex::Box 							&bx 	= mfi.tilebox();
-            amrex::Array4<char> const 					&tags 	= a_tags.array(mfi);
-            amrex::Array4<const Set::Scalar> const 		&modbox 	= (*material.modulus_field[lev]).array(mfi);
-            
-            amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
-                Set::Vector grad = Numeric::Gradient(modbox, i, j, k, 0, DX);
-                if (dxnorm * grad.lpNorm<2>() >= crack.refinement_threshold)
-                    tags(i, j, k) = amrex::TagBox::SET;
-            });
-        }
+        //for (amrex::MFIter mfi(*material.modulus_field[lev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        //{
+        //    const amrex::Box 							&bx 	= mfi.tilebox();
+        //    amrex::Array4<char> const 					&tags 	= a_tags.array(mfi);
+        //    amrex::Array4<const Set::Scalar> const 		&modbox 	= (*material.modulus_field[lev]).array(mfi);
+        //    
+        //    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
+        //        Set::Vector grad = Numeric::Gradient(modbox, i, j, k, 0, DX);
+        //        if (dxnorm * grad.lpNorm<2>() >= crack.refinement_threshold)
+        //            tags(i, j, k) = amrex::TagBox::SET;
+        //    });
+        //}
 
         for (amrex::MFIter mfi(*crack.field[lev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
         {
-            const amrex::Box 							&bx 	= mfi.tilebox();
+            const amrex::Box 							bx 	= mfi.tilebox() & domain.grow(-1);
             amrex::Array4<char> const 					&tags 	= a_tags.array(mfi);
             amrex::Array4<const Set::Scalar> const 		&c_new 	= (*crack.field[lev]).array(mfi);
             
