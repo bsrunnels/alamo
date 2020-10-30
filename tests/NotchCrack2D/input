@@ -20,7 +20,7 @@ geometry.prob_lo = -0.01 -0.01
 geometry.prob_hi = 0.01 0.01
 geometry.is_periodic= 0 0
 
-crack.modulus_scaling_max = 5.e-3
+crack.modulus_scaling_max = 0.0005 #0.005
 crack.refinement_threshold = 0.01
 
 crack.type = constant
@@ -39,8 +39,8 @@ ic.type = notch
 ic.notch.center = -0.01 0 #0.0 0.0
 ic.notch.orientation = 1.0 0.0
 ic.notch.thickness = 0.0003 #0.0002
-ic.notch.length = 2.e-3
-ic.notch.eps = 0.00008 ## 0.00004
+ic.notch.length = 0.002 #2.e-3
+ic.notch.eps = 0.00006
 ic.notch.mollifier = erf
 
 crack.bc.type.xlo = neumann
@@ -89,8 +89,6 @@ loading.body_force		=	0.0 0.0 0.0
 loading.val = 2.e-2
 
 
-elastic.bc.type.xlo = disp trac ##disp trac
-elastic.bc.type.xhi = disp trac ##trac trac
 
 #elastic.bc.type.xlo = trac disp
 #elastic.bc.type.xhi = trac trac
@@ -101,26 +99,31 @@ elastic.bc.type.xhi = disp trac ##trac trac
 #elastic.bc.type.xloyhi = trac disp
 #elastic.bc.type.xhiyhi = trac trac
 
-elastic.bc.val.xlo = 0.0 8.e-4
 
-# Mode I
-elastic.bc.type.ylo    = disp disp ##trac disp
-elastic.bc.type.xloylo = disp disp ##trac disp
-elastic.bc.type.xhiylo = disp disp ##trac disp
+# # Mode I
+# elastic.bc.type.xlo = disp trac ##disp trac
+# elastic.bc.type.xhi = disp trac ##trac trac
+# elastic.bc.val.xlo = 0.0 8.e-4
+# elastic.bc.type.ylo    = disp disp
+# elastic.bc.type.xloylo = disp disp
+# elastic.bc.type.xhiylo = disp disp
+# elastic.bc.type.yhi    = disp disp
+# elastic.bc.type.xloyhi = disp disp
+# elastic.bc.type.xhiyhi = disp disp
+# elastic.bc.val.yhi = 0.0 8.e-5
+# elastic.bc.val.xloyhi = 0.0 8.e-5
+# elastic.bc.val.xhiyhi = 0.0 8.e-5
 
-#elastic.bc.type.ylo = disp disp
-#elastic.bc.type.xloylo = disp disp
-#elastic.bc.type.xhiylo = disp disp
+# Mode II
+elastic.bc.type.ylo    = disp disp
+elastic.bc.type.xloylo = disp disp
+elastic.bc.type.xhiylo = disp disp
+elastic.bc.type.yhi    = disp disp
+elastic.bc.type.xloyhi = disp disp
+elastic.bc.type.xhiyhi = disp disp
+elastic.bc.val.yhi     = 0.00016 0 ##0.00008 0.0
+elastic.bc.val.xloyhi  = 0.00016 0 ##0.00008 0.0
+elastic.bc.val.xhiyhi  = 0.00016 0 ##0.00008 0.0
+elastic.bc.type.xlo = trac disp
+elastic.bc.type.xhi = trac disp
 
-# Mode I - displacement
-elastic.bc.type.yhi    = disp disp ##trac disp
-elastic.bc.type.xloyhi = disp disp ##trac disp
-elastic.bc.type.xhiyhi = disp disp ##trac disp
-
-#elastic.bc.type.yhi = disp disp
-#elastic.bc.type.xloyhi = disp disp
-#elastic.bc.type.xhiyhi = disp disp
-
-elastic.bc.val.yhi = 0.0 8.e-5
-elastic.bc.val.xloyhi = 0.0 8.e-5
-elastic.bc.val.xhiyhi = 0.0 8.e-5
