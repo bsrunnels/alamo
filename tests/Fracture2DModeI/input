@@ -1,0 +1,87 @@
+# This is an example for Mode I crack in a 2D domain.
+# The domain is initialized with a notch in the center.
+# The material is linear elastic isotropic and the crack is isotropic.
+# Mode-I loading is applied and crack propagation is observed.
+#
+# Usage
+# Compile in 2D and run with this input file. 
+
+alamo.program = fracture
+
+timestep = 1e-5
+stop_time = 1e0
+plot_file = tests/Fracture2DModeI/output
+
+fracture.problem_type = brittle
+
+amr.plot_int = 250
+amr.max_level = 4
+amr.n_cell = 128 128
+amr.blocking_factor = 16
+amr.regrid_int = 10
+amr.grid_eff = 1.0
+
+geometry.prob_lo = -0.01 -0.01
+geometry.prob_hi = 0.01 0.01
+geometry.is_periodic= 0 0
+
+crack.modulus_scaling_max = 3.e-3
+crack.refinement_threshold = 0.01
+
+crack.type = constant
+crack.constant.G_c = 2.7e3
+crack.constant.zeta = 1.e-5
+crack.constant.mobility = 1.0e-5
+crack.constant.eta_epsilon = 0.01
+crack.constant.gtype = square
+crack.constant.wtype = square
+crack.constant.exponent = 1.e-3
+crack.constant.threshold = 0.0
+
+ic.type = notch
+ic.notch.center = 0.0 0.0
+ic.notch.orientation = 1.0 0.0
+ic.notch.thickness = 0.0002 #0.0002
+ic.notch.length = 0.002 #2.e-3
+ic.notch.eps = 4.e-5
+ic.notch.mollifier = erf
+
+material.model = isotropic
+material.isotropic.lambda = 121.15
+material.isotropic.mu = 80.77 
+elastic.df_mult = 1.e9
+
+solver.bottom_solver 	=	bicgstab
+solver.int             = 250
+solver.composite_solve	=	1
+solver.verbose			=	2
+solver.cg_verbose 		=	0
+solver.max_iter		=	10000
+solver.max_fmg_iter 	=	10000
+solver.bottom_max_iter =	500
+solver.max_fixed_iter 	=	1000
+solver.linop_maxorder 	=	10
+solver.max_coarsening_level = 100000
+solver.agglomeration 	=	1
+solver.consolidation 	=	1
+solver.tol_rel			=	1.0e-7
+solver.tol_abs			= 	1.0e-7
+solver.cg_tol_rel 		=	1.0e-7
+solver.cg_tol_abs 		=	1.0e-7
+solver.use_fsmooth 	=	1
+
+
+loading.body_force		=	0.0 0.0 0.0
+
+# Mode - I
+elastic.bc.type.xlo = disp trac 
+elastic.bc.type.xhi = disp trac 
+elastic.bc.type.ylo    = disp disp
+elastic.bc.type.xloylo = disp disp
+elastic.bc.type.xhiylo = disp disp
+elastic.bc.type.yhi    = disp disp
+elastic.bc.type.xloyhi = disp disp
+elastic.bc.type.xhiyhi = disp disp
+elastic.bc.val.yhi = 0.0 8.e-5
+elastic.bc.val.xloyhi = 0.0 8.e-5
+elastic.bc.val.xhiyhi = 0.0 8.e-5

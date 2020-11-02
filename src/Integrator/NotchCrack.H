@@ -65,21 +65,6 @@ public:
         pp.queryclass("notch",*tmpic);
         crack.ic = tmpic;
 
-        // IC for modulus_field
-        // IC::Notch *tmpic2 = new IC::Notch(geom);
-        // pp.queryclass("notch2",*tmpic2);
-        // crack.ic2 = tmpic2;
-
-        // Use if cell based fabs are needed
-        // crack.bc = new BC::Constant(1);
-        // crack.bcdf = new BC::Constant(4);
-        // pp_crack.queryclass("bc",*static_cast<BC::Constant *>(crack.bc));
-        // pp_crack.queryclass("bc_df",*static_cast<BC::Constant *>(crack.bcdf));
-
-        // RegisterNewFab(crack.field,     crack.bc, 1, number_of_ghost_cells, "c",		true);
-        // RegisterNewFab(crack.field_old, crack.bc, 1, number_of_ghost_cells, "c_old",	true);
-        // RegisterNewFab(crack.driving_force, crack.bcdf, 4, number_of_ghost_cells, "driving_force",true);
-
         RegisterNodalFab(crack.field, 1, number_of_ghost_nodes, "crack", true);
         RegisterNodalFab(crack.field_old, 1, number_of_ghost_nodes, "crack_old", true);
         RegisterNodalFab(crack.driving_force, 5, number_of_ghost_nodes, "driving_force", true);
@@ -89,8 +74,7 @@ public:
 
         IO::ParmParse pp_load("loading");
         if (pp_load.countval("body_force")) pp_load.queryarr("body_force",loading.body_force);
-        pp_load.query("val", loading.val);
-
+        
         IO::ParmParse pp_elastic("elastic");
         pp_elastic.query("df_mult", elastic.df_mult);
         pp_elastic.queryclass("bc",elastic.brittlebc);
@@ -130,7 +114,6 @@ public:
         RegisterNodalFab(elastic.energy, 1, number_of_ghost_nodes, "energy", true);
         RegisterNodalFab(elastic.energy_pristine, 1, number_of_ghost_nodes, "energy_pristine", true);
         RegisterNodalFab(elastic.energy_pristine_old, 1, number_of_ghost_nodes, "energy_pristine_old", true);
-        // RegisterNewFab(material.modulus_field, crack.bc, 1, number_of_ghost_cells, "modulus_field", true);
         RegisterNodalFab(material.modulus_field, 1, number_of_ghost_nodes, "modulus_field", true);
         RegisterGeneralFab(material.brittlemodel, 1, number_of_ghost_nodes);
 
@@ -148,13 +131,10 @@ protected:
         elastic.energy_pristine[ilev] -> setVal(0.);
         elastic.energy_pristine_old[ilev] -> setVal(0.);
 
-        //crack.ic->Initialize(ilev,material.modulus_field);
         material.modulus_field[ilev]->setVal(1.0);
         crack.ic->Initialize(ilev,crack.field);
         crack.ic->Initialize(ilev,crack.field_old);
-        // crack.field[ilev]->setVal(1.0);
-        // crack.field_old[ilev]->setVal(1.0);
-
+        
         material.brittlemodel[ilev]->setVal(material.brittlemodeltype);
     }
 
@@ -186,18 +166,11 @@ protected:
 
                 amrex::ParallelFor (box,[=] AMREX_GPU_DEVICE(int i, int j, int k){
                     Set::Scalar _temp = 0;
-                    // _temp = std::min (crack.cracktype->g_phi(c_new(i,j,k,0),0), crack.cracktype->g_phi(modbox(i,j,k,0),0));
-                    //     );
-                    // _temp = std::sqrt((crack.cracktype->g_phi(c_new(i,j,k,0),0))*(crack.cracktype->g_phi(c_new(i,j,k,0),0))
-                    //         + crack.cracktype->g_phi(modbox(i,j,k,0),0)*crack.cracktype->g_phi(modbox(i,j,k,0),0));
                     _temp = crack.cracktype->g_phi(c_new(i,j,k,0),0);
-                    // _temp *= crack.cracktype->g_phi(modbox(i,j,k,0),0);
-                    // _temp = crack.cracktype->g_phi(Numeric::Interpolate::CellToNodeAverage(c_old,i,j,k,0),0.);
                     if (std::isnan(_temp)) Util::Abort(INFO);
                     if(_temp < 0.0) Util::Abort(INFO);//_temp = 0.;
                     if(_temp > 1.0) Util::Abort(INFO);//_temp = 1.0;
 					_temp = crack.scaleModulusMax + _temp * (1. - crack.scaleModulusMax);
-                    //modelfab(i,j,k,0).DegradeModulus(std::min(1.-_temp,1.-crack.scaleModulusMax));
                     modelfab(i,j,k,0).DegradeModulus(1-_temp);
                 });
             }
@@ -231,6 +204,8 @@ protected:
         
         {
             Solver::Nonlocal::Newton<brittle_fracture_model_type_test>  solver(op_b);
+            // IO::ParmParse pp_solver("solver");
+            // pp_solver.queryclass("solver",solver);
             solver.setMaxIter(sol.max_iter);
             solver.setMaxFmgIter(sol.max_fmg_iter);
             solver.setFixedIter(sol.max_fixed_iter);
@@ -280,12 +255,6 @@ protected:
                         if(eValues(n) > 0.0) epsp += eValues(n)*(eVectors.col(n)*eVectors.col(n).transpose());
                         else epsn += eValues(n)*(eVectors.col(n)*eVectors.col(n).transpose());
                     }
-                    // Set::Scalar _temp = crack.cracktype->g_phi(modbox(i,j,k,0),0.);
-                    // if(std::isnan(_temp)) Util::Abort(INFO, "Nans in temp. modbox(", i,",",j,",",k,") = ", modbox(i,j,k,0));
-                    // if (_temp < 0.0) _temp = 0.0;
-                    // if (_temp > 1.0) _temp = 1.0;
-                    // _temp = crack.scaleModulusMax + _temp * (1. - crack.scaleModulusMax);
-                    // material.brittlemodeltype.DegradeModulus(1.- _temp);
                     energy_box(i,j,k,0) = material.brittlemodeltype.W(epsp);
                     energy_box(i,j,k,0) = energy_box(i,j,k,0) > energy_box_old(i,j,k,0) ? energy_box(i,j,k,0) : energy_box_old(i,j,k,0);
                 });
@@ -354,11 +323,11 @@ protected:
                     Set::Matrix DDc = Numeric::Hessian(c_old, i, j, k, 0, DX);
                     Set::Scalar laplacian = DDc.trace();
 
-                    Set::Matrix4<AMREX_SPACEDIM, Set::Sym::Full> DDDDEta = Numeric::DoubleHessian<AMREX_SPACEDIM>(c_old, i, j, k, 0, DX);
+                    // Set::Matrix4<AMREX_SPACEDIM, Set::Sym::Full> DDDDEta = Numeric::DoubleHessian<AMREX_SPACEDIM>(c_old, i, j, k, 0, DX);
                     Set::Scalar bilaplacian = 0.0;
-                    for (int p = 0; p < AMREX_SPACEDIM; p++)
-                        for (int q =0; q < AMREX_SPACEDIM; q++)
-                            bilaplacian += DDDDEta(p,p,q,q);
+                    // for (int p = 0; p < AMREX_SPACEDIM; p++)
+                    //     for (int q =0; q < AMREX_SPACEDIM; q++)
+                    //         bilaplacian += DDDDEta(p,p,q,q);
 
                     df(i,j,k,1) = crack.cracktype->Gc(0.0)*crack.cracktype->Dw_phi(c_old(i,j,k,0),0.0)/(4.0*crack.cracktype->Zeta(0.0))*crack.mult_df_Gc;
                     df(i,j,k,2) = 2.0*crack.cracktype->Zeta(0.0)*crack.cracktype->Gc(0.0)*laplacian*crack.mult_df_lap;
@@ -370,7 +339,6 @@ protected:
                     
                     rhs += 0.5*(crack.cracktype->Zeta(0.0)*crack.cracktype->Zeta(0.0)*crack.cracktype->Zeta(0.0))*bilaplacian;
                     
-                    // rhs *= _temp;
                     rhs *= crack.cracktype->g_phi(_temp,0.0);
                     // if(rhs > 1.e10) Util::Abort(INFO, "Very large values of rhs at (",i,",",j,",",k,") = ", rhs, ". c_old(i,j,k,0) = ",c_old(i,j,k,0));
 
@@ -494,7 +462,6 @@ private:
 
     struct{
         Set::Vector body_force 				= Set::Vector::Zero();
-        Set::Scalar val 					= 0.;
     } loading;
 
 };
