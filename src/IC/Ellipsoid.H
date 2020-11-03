@@ -113,6 +113,7 @@ public:
 			if (eps[i] <= 0.0) eps[i] = 1.e-5;
 			value.eps.push_back(eps[i]);
 		}
+		Util::Message(INFO, "eps size = ", value.eps.size(),  "eps[0] = ", value.eps[0]);
 		//if(value.eps <= 0.) value.eps = 1.e-5;
 
 		std::string mollifier;
