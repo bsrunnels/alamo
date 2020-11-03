@@ -76,7 +76,7 @@ protected:
 	void TagCellsForRefinement (int lev, amrex::TagBoxArray& tags, amrex::Real /*time*/, int /*ngrow*/) override;
 
     /// \brief Perform integration of field variables for error norm calculations
-	// void Integrate(int amrlev, Set::Scalar time, int step,const amrex::MFIter &mfi, const amrex::Box &box) override;
+	void Integrate(int amrlev, Set::Scalar time, int step,const amrex::MFIter &mfi, const amrex::Box &box) override;
 
 private:
     int number_of_ghost_nodes = 2;				///< Number of ghost nodes
@@ -88,6 +88,7 @@ private:
         Set::Field<Set::Scalar> field;                ///< crack field at current time step
         Set::Field<Set::Scalar> field_old;            ///< crack field at previous time step
         Set::Field<Set::Scalar> driving_force;         ///< crack driving forces.
+        Set::Scalar driving_force_norm = 0.0;
 
         Model::Interface::Crack::Crack *cracktype;       ///< type of crack. See Crack/Constant or Crack/Sin
 		std::string ic_type;                            ///< crack IC type. See IC/Notch and IC/Ellipsoid

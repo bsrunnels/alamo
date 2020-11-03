@@ -88,6 +88,7 @@ Fracture::Fracture() :
     RegisterNodalFab(crack.field, 1, number_of_ghost_nodes, "crack", true);
     RegisterNodalFab(crack.field_old, 1, number_of_ghost_nodes, "crack_old", true);
     RegisterNodalFab(crack.driving_force, 5, number_of_ghost_nodes, "driving_force", true);
+    RegisterIntegratedVariable(&(crack.driving_force_norm),"driving_force_norm");
     
     //==================================================
 
@@ -466,39 +467,19 @@ Fracture::Advance (int lev, Set::Scalar /*time*/, Set::Scalar dt)
     Util::RealFillBoundary(*crack.field[lev],geom[lev]);
 }
 
-// void 
-// Fracture::Integrate(int amrlev, Set::Scalar /*time*/, int /*step*/,const amrex::MFIter &mfi, const amrex::Box &box)
-// {
-	// const amrex::Real* DX = geom[amrlev].CellSize();
+void 
+Fracture::Integrate(int amrlev, Set::Scalar /*time*/, int /*step*/,const amrex::MFIter &mfi, const amrex::Box &box)
+{
+	const amrex::Real* DX = geom[amrlev].CellSize();
+    const Set::Scalar DV = AMREX_D_TERM(DX[0],*DX[1],*DX[2]);
 
-	// amrex::Array4<const Set::Scalar> const &c_new = (*crack.field[amrlev]).array(mfi);
-	// amrex::Array4<const Set::Scalar> const &c_old = (*crack.field_old[amrlev]).array(mfi);
-    // amrex::Array4<const Set::Scalar> ep_new;
-    // amrex::Array4<const Set::Scalar> ep_old;
-
-    // if(fracture_type == FractureType::Ductile)
-    // {
-    //     ep_new = (*plastic.strain[amrlev]).array(mfi);
-    //     ep_old = (*plastic.strain_old[amrlev]).array(mfi);
-    // }
-
-    // amrex::ParallelFor(box, [=] AMREX_GPU_DEVICE(int i, int j, int k) 
-    // {
-	// 	crack.error_norm += ((c_new(i,j,k,0)-c_old(i,j,k,0))*(c_new(i,j,k,0)-c_old(i,j,k,0)))*(AMREX_D_TERM(DX[0],*DX[1],*DX[2]));
-	// 	crack.norm += c_new(i,j,k,0)*c_new(i,j,k,0)*(AMREX_D_TERM(DX[0],*DX[1],*DX[2]));
-        
-    //     if(fracture_type == FractureType::Ductile)
-    //     {
-    //         for (int n = 0; n < AMREX_SPACEDIM*AMREX_SPACEDIM; n++)
-    //         {
-    //             plastic.norm += ep_new(i,j,k,n)*ep_new(i,j,k,n)*(AMREX_D_TERM(DX[0],*DX[1],*DX[2]));
-    //             plastic.error_norm += (ep_new(i,j,k,n)-ep_old(i,j,k,n))*(ep_new(i,j,k,n)-ep_old(i,j,k,n))*(AMREX_D_TERM(DX[0],*DX[1],*DX[2]));
-    //         }
-    //         plastic.norm *= crack.cracktype->g_phi(c_new(i,j,k,0),0.0);
-	// 	    plastic.error_norm *= crack.cracktype->g_phi(c_new(i,j,k,0),0.);
-    //     }
-	// });
-// }
+	amrex::Array4<const Set::Scalar> const &df = (*crack.driving_force[amrlev]).array(mfi);
+    
+    amrex::ParallelFor(box, [=] AMREX_GPU_DEVICE(int i, int j, int k) 
+    {
+        crack.driving_force_norm += df(i,j,k,4) * DV;
+	});
+}
 
 void
 Fracture::TagCellsForRefinement (int lev, amrex::TagBoxArray &a_tags, amrex::Real /*time*/, int /*ngrow*/)
