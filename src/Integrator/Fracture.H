@@ -78,6 +78,9 @@ protected:
     /// \brief Perform integration of field variables for error norm calculations
 	void Integrate(int amrlev, Set::Scalar time, int step,const amrex::MFIter &mfi, const amrex::Box &box) override;
 
+	void
+	TimeStepComplete(Set::Scalar time,int iter) override;
+
 private:
     int number_of_ghost_nodes = 2;				///< Number of ghost nodes
     int nlevels;
@@ -88,7 +91,10 @@ private:
         Set::Field<Set::Scalar> field;                ///< crack field at current time step
         Set::Field<Set::Scalar> field_old;            ///< crack field at previous time step
         Set::Field<Set::Scalar> driving_force;         ///< crack driving forces.
+		Set::Scalar driving_force_reference = 1.0;
         Set::Scalar driving_force_norm = 0.0;
+		Set::Scalar driving_force_tolerance_rel = 0.0;
+		Set::Scalar driving_force_tolerance_abs = 1E-4;
 
         Model::Interface::Crack::Crack *cracktype;       ///< type of crack. See Crack/Constant or Crack/Sin
 		std::string ic_type;                            ///< crack IC type. See IC/Notch and IC/Ellipsoid
@@ -126,6 +132,8 @@ private:
 
         BC::Operator::Elastic::Constant 	brittlebc;  ///< elastic BC if using brittle fracture
 		Set::Scalar df_mult = 1.0;              ///< mulitplier for elastic driving force.
+
+		bool do_solve_now = false;
     } elastic;
 
     struct{

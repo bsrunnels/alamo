@@ -221,13 +221,21 @@ Fracture::Initialize (int ilev)
 void
 Fracture::TimeStepBegin(amrex::Real time, int iter)
 {
+    Util::Message(INFO,crack.driving_force_norm," ",crack.driving_force_reference," ",crack.driving_force_tolerance_rel);
+    if (crack.driving_force_norm / crack.driving_force_reference < crack.driving_force_tolerance_rel)
+        elastic.do_solve_now = true;
+    if (crack.driving_force_norm < crack.driving_force_tolerance_abs)
+        elastic.do_solve_now = true;
+
+    if (!elastic.do_solve_now) return;
+
     if (anisotropy.on && time >= anisotropy.tstart)
 	{
 		SetTimestep(anisotropy.timestep);
 		if (anisotropy.elastic_int > 0) 
 			if (iter % anisotropy.elastic_int) return;
 	}
-    if(iter%sol.interval) return;
+    //if(iter%sol.interval) return;
     loading.val = loading.init + ((double)loading.step)*loading.rate;
     material.brittlemodeltype.DegradeModulus(0.0);
 
@@ -386,6 +394,9 @@ Fracture::TimeStepBegin(amrex::Real time, int iter)
         }
     }
     //==================================================
+
+    integrate_variables_before_advance = false;
+    integrate_variables_after_advance = true;
 }
 
 void 
@@ -487,6 +498,9 @@ Fracture::TagCellsForRefinement (int lev, amrex::TagBoxArray &a_tags, amrex::Rea
 	const amrex::Real *DX = geom[lev].CellSize();
 	const Set::Vector dx(DX);
 	const Set::Scalar dxnorm = dx.lpNorm<2>();
+    amrex::Box domain(geom[lev].Domain());
+	domain.convert(amrex::IntVect::TheNodeVector());
+
 
 	for (amrex::MFIter mfi(*crack.field[lev], TilingIfNotGPU()); mfi.isValid(); ++mfi)
 	{
@@ -495,38 +509,23 @@ Fracture::TagCellsForRefinement (int lev, amrex::TagBoxArray &a_tags, amrex::Rea
 		amrex::Array4<const Set::Scalar> const 		&c_new 	= (*crack.field[lev]).array(mfi);
 		
 		amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
-			Set::Vector grad = Numeric::Gradient(c_new, i, j, k, 0, DX);
+            std::array<Numeric::StencilType,AMREX_SPACEDIM> sten 
+                = Numeric::GetStencil(i,j,k,domain);
+
+			Set::Vector grad = Numeric::Gradient(c_new, i, j, k, 0, DX, sten);
 			if (dxnorm * grad.lpNorm<2>() > crack.refinement_threshold)
 				tags(i, j, k) = amrex::TagBox::SET;
 		});
 	}
 }
 
-// void
-// Fracture::TimeStepComplete(amrex::Real time,int iter)
-// {
-    // IntegrateVariables(time,iter);
+void
+Fracture::TimeStepComplete(amrex::Real time,int iter)
+{
+    if (elastic.do_solve_now)
+        crack.driving_force_reference = crack.driving_force_norm;
 
-    // Set::Scalar rel_c_err = crack.error_norm/crack.norm;
-    // Util::Message(INFO, "crack_err_norm = ", crack.error_norm);
-	// Util::Message(INFO, "c_new_norm = ", crack.norm);
-    // Util::Message(INFO, "crack relative error= ", rel_c_err);
-
-    // if (fracture_type == FractureType::Ductile)
-    // {
-    //     Set::Scalar rel_ep_err = plastic.error_norm/plastic.norm;
-    //     Util::Message(INFO, "plastic strain norm = ", plastic.norm);
-    //     Util::Message(INFO, "plastic strain error norm = ", plastic.error_norm);
-    //     Util::Message(INFO, "plastic strain relative error= ", rel_ep_err);
-    // }
-
-    // if (crack.error_norm > crack.tol_abs || rel_c_err > crack.tol_rel) return;
-    // if (fracture_type == FractureType::Ductile && (plastic.norm > plastic.tol_abs || plastic.error_norm > plastic.tol_rel)) return;
-
-	// WritePlotFile("crack",(double)loading.step,loading.step);
-
-	// loading.step++;
-	// if(loading.val >= loading.max) SetStopTime(time-0.01);
-// }
+    elastic.do_solve_now = false;
+}
 
 }
