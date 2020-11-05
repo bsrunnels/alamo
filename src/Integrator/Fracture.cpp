@@ -430,6 +430,8 @@ Fracture::TimeStepBegin(amrex::Real time, int iter)
                         else epsn += eValues(n)*(eVectors.col(n)*eVectors.col(n).transpose());
                     }
                     Set::Scalar _temp = crack.scaleModulusMax + crack.cracktype->g_phi(modbox(i,j,k,0),0.0) * (1. - crack.scaleModulusMax);
+                    if(_temp < 0.0) _temp = 0.;
+                    if(_temp > 1.0) _temp = 1.0;
                     material.brittlemodeltype.DegradeModulus(1.-_temp);
                     energy_box(i,j,k,0) = material.brittlemodeltype.W(epsp);
                     energy_box(i,j,k,0) = energy_box(i,j,k,0) > energy_box_old(i,j,k,0) ? energy_box(i,j,k,0) : energy_box_old(i,j,k,0);
