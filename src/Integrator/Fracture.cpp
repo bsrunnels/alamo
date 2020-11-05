@@ -508,7 +508,7 @@ Fracture::Advance (int lev, Set::Scalar /*time*/, Set::Scalar dt)
 
                 rhs += crack.cracktype->Gc(0.0)*crack.cracktype->Dw_phi(c_old(i,j,k,0),0.)/(4.0*crack.cracktype->Zeta(0.0))*crack.mult_df_Gc;
                 rhs -= 2.0*crack.cracktype->Zeta(0.0)*crack.cracktype->Gc(0.0)*laplacian*crack.mult_df_lap;
-                rhs += 0.5*(crack.cracktype->Zeta(0.0)*crack.cracktype->Zeta(0.0)*crack.cracktype->Zeta(0.0))*bilaplacian;
+                // rhs += 0.5*(crack.cracktype->Zeta(0.0)*crack.cracktype->Zeta(0.0)*crack.cracktype->Zeta(0.0))*bilaplacian;
 
                 // rhs *= crack.cracktype->g_phi(modbox(i,j,k,0),0.0);                
                 // rhs *= modbox(i,j,k,0); 
