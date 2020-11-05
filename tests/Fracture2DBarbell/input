@@ -55,7 +55,7 @@ material.isotropic.mu = 80.77
 elastic.df_mult = 1.e9
 
 material.ic.type = ellipsoid
-material.ic.ellipsoid.center = -0.002 0.0 0.002 0.0
+material.ic.ellipsoid.center = -0.001 0.0 0.001 0.0
 material.ic.ellipsoid.radius = 0.00025 0.00025 0.00025 0.00025
 material.ic.ellipsoid.eps = 3.e-4 3.e-4
 material.ic.ellipsoid.mollifier = erf

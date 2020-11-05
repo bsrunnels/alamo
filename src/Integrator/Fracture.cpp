@@ -429,7 +429,8 @@ Fracture::TimeStepBegin(amrex::Real time, int iter)
                         if(eValues(n) > 0.0) epsp += eValues(n)*(eVectors.col(n)*eVectors.col(n).transpose());
                         else epsn += eValues(n)*(eVectors.col(n)*eVectors.col(n).transpose());
                     }
-                    material.brittlemodeltype.DegradeModulus(crack.scaleModulusMax + crack.cracktype->g_phi(modbox(i,j,k,0),0.0) * (1. - crack.scaleModulusMax));
+                    Set::Scalar _temp = crack.scaleModulusMax + crack.cracktype->g_phi(modbox(i,j,k,0),0.0) * (1. - crack.scaleModulusMax);
+                    material.brittlemodeltype.DegradeModulus(1.-_temp);
                     energy_box(i,j,k,0) = material.brittlemodeltype.W(epsp);
                     energy_box(i,j,k,0) = energy_box(i,j,k,0) > energy_box_old(i,j,k,0) ? energy_box(i,j,k,0) : energy_box_old(i,j,k,0);
                     
@@ -495,7 +496,7 @@ Fracture::Advance (int lev, Set::Scalar /*time*/, Set::Scalar dt)
                 Set::Scalar laplacian = DDc.trace();
 
                 // Set::Matrix4<AMREX_SPACEDIM, Set::Sym::Full> DDDDEta = Numeric::DoubleHessian<AMREX_SPACEDIM>(c_old, i, j, k, 0, DX);
-                Set::Scalar bilaplacian = 0.0;
+                // Set::Scalar bilaplacian = 0.0;
                 // for (int p = 0; p < AMREX_SPACEDIM; p++)
                 //     for (int q =0; q < AMREX_SPACEDIM; q++)
                 //         bilaplacian += DDDDEta(p,p,q,q);
@@ -504,7 +505,7 @@ Fracture::Advance (int lev, Set::Scalar /*time*/, Set::Scalar dt)
 
                 df(i,j,k,1) = crack.cracktype->Gc(0.0)*crack.cracktype->Dw_phi(c_old(i,j,k,0),0.0)/(4.0*crack.cracktype->Zeta(0.0))*crack.mult_df_Gc;
                 df(i,j,k,2) = 2.0*crack.cracktype->Zeta(0.0)*crack.cracktype->Gc(0.0)*laplacian*crack.mult_df_lap;
-                df(i,j,k,3) = 0.5*(crack.cracktype->Zeta(0.0)*crack.cracktype->Zeta(0.0)*crack.cracktype->Zeta(0.0))*bilaplacian;
+                // df(i,j,k,3) = 0.5*(crack.cracktype->Zeta(0.0)*crack.cracktype->Zeta(0.0)*crack.cracktype->Zeta(0.0))*bilaplacian;
 
                 rhs += crack.cracktype->Gc(0.0)*crack.cracktype->Dw_phi(c_old(i,j,k,0),0.)/(4.0*crack.cracktype->Zeta(0.0))*crack.mult_df_Gc;
                 rhs -= 2.0*crack.cracktype->Zeta(0.0)*crack.cracktype->Gc(0.0)*laplacian*crack.mult_df_lap;

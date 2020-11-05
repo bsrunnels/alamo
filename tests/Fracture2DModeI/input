@@ -29,6 +29,8 @@ geometry.is_periodic= 0 0
 
 crack.modulus_scaling_max = 1.e-3
 crack.refinement_threshold = 0.01
+crack.df_tol_rel = 0.0
+crack.df_tol_abs = 1e-4
 
 crack.type = constant
 crack.constant.G_c = 2.7e3
