@@ -26,6 +26,8 @@ Fracture::Fracture() :
         pp_crack.query("type",crack_type);
         pp_crack.query("modulus_scaling_max",crack.scaleModulusMax);
         pp_crack.query("refinement_threshold",crack.refinement_threshold);
+        pp_crack.query("df_tol_rel",crack.driving_force_tolerance_rel);
+        pp_crack.query("df_tol_abs",crack.driving_force_tolerance_abs);
         
         if(crack_type=="constant")
         {
@@ -71,16 +73,20 @@ Fracture::Fracture() :
             IC::Ellipsoid *tmpic = new IC::Ellipsoid(geom);
             pp.queryclass("ellipsoid", *tmpic);
             crack.ic = tmpic;
+            crack.is_ic = true;
         }
         else if(crack.ic_type == "notch")
         {
             IC::Notch *tmpic = new IC::Notch(geom);
             pp.queryclass("notch",*tmpic);
             crack.ic = tmpic;
+            crack.is_ic = true;
         }
-            
-        else
-            Util::Abort(INFO,"This type of IC hasn't been implemented yet");
+        else 
+        {
+            Util::Warning(INFO, "No valid IC found. Ignoring ICs");
+            crack.is_ic = false;
+        }
     }
     //==================================================
 
@@ -106,7 +112,30 @@ Fracture::Fracture() :
                 break;
             default:
                 break;
-        }       
+        }
+
+        IO::ParmParse pp_material_ic("material.ic");
+        std::string ic_type;
+        pp_material_ic.query("type",ic_type);
+        if (ic_type == "ellipsoid")
+        {
+            IC::Ellipsoid *tmpic = new IC::Ellipsoid(geom);
+            pp_material_ic.queryclass("ellipsoid", *tmpic);
+            material.ic = tmpic;
+            material.is_ic = true;
+        }
+        else if(ic_type == "notch")
+        {
+            IC::Notch *tmpic = new IC::Notch(geom);
+            pp_material_ic.queryclass("notch",*tmpic);
+            material.ic = tmpic;
+            material.is_ic = true;
+        }
+        else 
+        {
+            Util::Warning(INFO, "No valid IC found. Ignoring ICs");
+            material.is_ic = false;
+        }
     }
     //==================================================
 
@@ -188,9 +217,16 @@ Fracture::Initialize (int ilev)
     //==================================================
     // Initialization of crack fields
     {
-        crack.ic->Initialize(ilev,crack.field);
-        crack.ic->Initialize(ilev,crack.field_old);
-        crack.ic->Initialize(ilev,material.modulus_field);
+        if (crack.is_ic)
+        {
+            crack.ic->Initialize(ilev,crack.field);
+            crack.ic->Initialize(ilev,crack.field_old);
+        }
+        else
+        {
+            crack.field[ilev]->setVal(1.0);
+            crack.field_old[ilev]->setVal(1.0);
+        }
         crack.driving_force[ilev]->setVal(0.0);
     }
     //==================================================
@@ -212,6 +248,9 @@ Fracture::Initialize (int ilev)
     //==================================================
     // Initialization of brittle and ductile specific fields
     {
+        if(material.is_ic) material.ic->Initialize(ilev,material.modulus_field);
+        else material.modulus_field[ilev]->setVal(1.0);
+
         if (fracture_type == FractureType::Brittle)
             material.brittlemodel[ilev]->setVal(material.brittlemodeltype);
     }
@@ -257,10 +296,13 @@ Fracture::TimeStepBegin(amrex::Real time, int iter)
         {
             Util::RealFillBoundary(*crack.field[ilev],geom[ilev]);
             Util::RealFillBoundary(*crack.field_old[ilev],geom[ilev]);
+            Util::RealFillBoundary(*material.modulus_field[ilev],geom[ilev]);
+
             for (amrex::MFIter mfi(*elastic.disp[ilev],true); mfi.isValid(); ++mfi)
             {
                 amrex::Box box = mfi.grownnodaltilebox();
                 amrex::Array4<const Set::Scalar> const& c_new = (*crack.field[ilev]).array(mfi);
+                amrex::Array4<const Set::Scalar> const& modbox = (*material.modulus_field[ilev]).array(mfi);
 
                 amrex::Array4<brittle_fracture_model_type> modelfab_b;
                 
@@ -272,6 +314,8 @@ Fracture::TimeStepBegin(amrex::Real time, int iter)
                     
                     if (fracture_type == FractureType::Brittle)
                         _temp = crack.cracktype->g_phi(c_new(i,j,k,0),0);
+                    
+                    _temp = std::min(_temp, crack.cracktype->g_phi(modbox(i,j,k,0),0.0));
                     
                     if (std::isnan(_temp)) Util::Abort(INFO);
                     if(_temp < 0.0) _temp = 0.;
@@ -360,6 +404,7 @@ Fracture::TimeStepBegin(amrex::Real time, int iter)
         {
             Util::RealFillBoundary(*elastic.strain[ilev],geom[ilev]);
             Util::RealFillBoundary(*elastic.energy_pristine_old[ilev],geom[ilev]);
+            Util::RealFillBoundary(*material.modulus_field[ilev],geom[ilev]);
             elastic.energy_pristine[ilev]->setVal(0.0);
 
             for (amrex::MFIter mfi(*elastic.strain[ilev],true); mfi.isValid(); ++mfi)
@@ -368,7 +413,7 @@ Fracture::TimeStepBegin(amrex::Real time, int iter)
                 amrex::Array4<const Set::Scalar> const& strain_box 	= (*elastic.strain[ilev]).array(mfi);
                 amrex::Array4<Set::Scalar> const& energy_box 		= (*elastic.energy_pristine[ilev]).array(mfi);
                 amrex::Array4<Set::Scalar> const& energy_box_old 	= (*elastic.energy_pristine_old[ilev]).array(mfi);
-                amrex::Array4<Set::Scalar>	strainp_box;
+                amrex::Array4<const Set::Scalar> const& modbox = (*material.modulus_field[ilev]).array(mfi);
 
                 amrex::ParallelFor (box,[=] AMREX_GPU_DEVICE(int i, int j, int k){
                     Set::Matrix eps = Numeric::FieldToMatrix(strain_box,i,j,k);
@@ -384,6 +429,7 @@ Fracture::TimeStepBegin(amrex::Real time, int iter)
                         if(eValues(n) > 0.0) epsp += eValues(n)*(eVectors.col(n)*eVectors.col(n).transpose());
                         else epsn += eValues(n)*(eVectors.col(n)*eVectors.col(n).transpose());
                     }
+                    material.brittlemodeltype.DegradeModulus(crack.scaleModulusMax + crack.cracktype->g_phi(modbox(i,j,k,0),0.0) * (1. - crack.scaleModulusMax));
                     energy_box(i,j,k,0) = material.brittlemodeltype.W(epsp);
                     energy_box(i,j,k,0) = energy_box(i,j,k,0) > energy_box_old(i,j,k,0) ? energy_box(i,j,k,0) : energy_box_old(i,j,k,0);
                     
@@ -417,6 +463,7 @@ Fracture::Advance (int lev, Set::Scalar /*time*/, Set::Scalar dt)
 		amrex::Array4<Set::Scalar> const& df = (*crack.driving_force[lev]).array(mfi);
 		amrex::Array4<Set::Scalar> const& c_new = (*crack.field[lev]).array(mfi);
 		amrex::Array4<const Set::Scalar> const& energy_box = (*elastic.energy_pristine[lev]).array(mfi);
+        // amrex::Array4<const Set::Scalar> const& modbox = (*material.modulus_field[lev]).array(mfi);
 
         amrex::ParallelFor (bx,[=] AMREX_GPU_DEVICE(int i, int j, int k){
 #if AMREX_SPACEDIM !=2
@@ -447,11 +494,11 @@ Fracture::Advance (int lev, Set::Scalar /*time*/, Set::Scalar dt)
                 Set::Matrix DDc = Numeric::Hessian(c_old, i, j, k, 0, DX);
                 Set::Scalar laplacian = DDc.trace();
 
-                Set::Matrix4<AMREX_SPACEDIM, Set::Sym::Full> DDDDEta = Numeric::DoubleHessian<AMREX_SPACEDIM>(c_old, i, j, k, 0, DX);
+                // Set::Matrix4<AMREX_SPACEDIM, Set::Sym::Full> DDDDEta = Numeric::DoubleHessian<AMREX_SPACEDIM>(c_old, i, j, k, 0, DX);
                 Set::Scalar bilaplacian = 0.0;
-                for (int p = 0; p < AMREX_SPACEDIM; p++)
-                    for (int q =0; q < AMREX_SPACEDIM; q++)
-                        bilaplacian += DDDDEta(p,p,q,q);
+                // for (int p = 0; p < AMREX_SPACEDIM; p++)
+                //     for (int q =0; q < AMREX_SPACEDIM; q++)
+                //         bilaplacian += DDDDEta(p,p,q,q);
                 
                 if (anisotropy.on) Util::Abort(INFO, "Anisotropy not implemented yet");
 
@@ -462,7 +509,9 @@ Fracture::Advance (int lev, Set::Scalar /*time*/, Set::Scalar dt)
                 rhs += crack.cracktype->Gc(0.0)*crack.cracktype->Dw_phi(c_old(i,j,k,0),0.)/(4.0*crack.cracktype->Zeta(0.0))*crack.mult_df_Gc;
                 rhs -= 2.0*crack.cracktype->Zeta(0.0)*crack.cracktype->Gc(0.0)*laplacian*crack.mult_df_lap;
                 rhs += 0.5*(crack.cracktype->Zeta(0.0)*crack.cracktype->Zeta(0.0)*crack.cracktype->Zeta(0.0))*bilaplacian;
-                
+
+                // rhs *= crack.cracktype->g_phi(modbox(i,j,k,0),0.0);                
+                // rhs *= modbox(i,j,k,0); 
 
                 if (fracture_type == FractureType::Brittle)
                     df(i,j,k,4) = std::max(0.,rhs - crack.cracktype->DrivingForceThreshold(c_old(i,j,k,0)));
@@ -507,20 +556,22 @@ Fracture::TagCellsForRefinement (int lev, amrex::TagBoxArray &a_tags, amrex::Rea
 		const amrex::Box 							&bx 	= mfi.tilebox();
 		amrex::Array4<char> const 					&tags 	= a_tags.array(mfi);
 		amrex::Array4<const Set::Scalar> const 		&c_new 	= (*crack.field[lev]).array(mfi);
+        amrex::Array4<const Set::Scalar> const 		&mod_box 	= (*material.modulus_field[lev]).array(mfi);
 		
 		amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) {
             std::array<Numeric::StencilType,AMREX_SPACEDIM> sten 
                 = Numeric::GetStencil(i,j,k,domain);
 
 			Set::Vector grad = Numeric::Gradient(c_new, i, j, k, 0, DX, sten);
-			if (dxnorm * grad.lpNorm<2>() > crack.refinement_threshold)
+            Set::Vector grad_mod = Numeric::Gradient(mod_box, i, j, k, 0, DX, sten);
+			if (dxnorm * grad.lpNorm<2>() > crack.refinement_threshold || dxnorm * grad_mod.lpNorm<2>() > crack.refinement_threshold)
 				tags(i, j, k) = amrex::TagBox::SET;
 		});
 	}
 }
 
 void
-Fracture::TimeStepComplete(amrex::Real time,int iter)
+Fracture::TimeStepComplete(amrex::Real /*time*/,int /*iter*/)
 {
     if (elastic.do_solve_now)
         crack.driving_force_reference = crack.driving_force_norm;

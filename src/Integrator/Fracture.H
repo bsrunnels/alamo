@@ -93,8 +93,8 @@ private:
         Set::Field<Set::Scalar> driving_force;         ///< crack driving forces.
 		Set::Scalar driving_force_reference = 1.0;
         Set::Scalar driving_force_norm = 0.0;
-		Set::Scalar driving_force_tolerance_rel = 0.0;
-		Set::Scalar driving_force_tolerance_abs = 1E-4;
+		Set::Scalar driving_force_tolerance_rel = 1E-4;
+		Set::Scalar driving_force_tolerance_abs = 0.0;
 
         Model::Interface::Crack::Crack *cracktype;       ///< type of crack. See Crack/Constant or Crack/Sin
 		std::string ic_type;                            ///< crack IC type. See IC/Notch and IC/Ellipsoid
@@ -106,6 +106,8 @@ private:
 
 		Set::Scalar mult_df_Gc = 1.0;				///< Multiplier for Gc/zeta term
 		Set::Scalar mult_df_lap = 1.0;				///< Multiplier for the laplacian term
+
+		bool is_ic = false;
     } crack;
 
     struct
@@ -152,6 +154,8 @@ private:
 		Set::Field<Set::Scalar> modulus_field;
         Set::Field<brittle_fracture_model_type> brittlemodel;
         std::string input_material = "isotropic";
+		IC::IC *ic;
+		bool is_ic = false;
     } material;
     
     struct{
