@@ -246,11 +246,10 @@ ${AMREX_TARGET}/lib/libamrex.so : ${AMREX_TARGET}/lib/libamrex.a
 	@printf "$(B_ON)$(FG_ORANGE)LIBAMREX$(RESET)             $@\n" 	
 	$(QUIET)$(CC) -shared -fPIC -o $@ -Wl,--whole-archive $< -Wl,--no-whole-archive
 
+PAGE_SLUG ?= development
+
 githubpages: docs cov-report
-	mkdir -p ./githubpages/
-	echo "<head><meta http-equiv=\"refresh\" content=\"0; url='docs/index.html\" /></head>" > githubpages/index.html
-	cp -rf docs/build/html ./githubpages/docs/
-	cp -rf cov/ ./githubpages/cov/
+	python3 scripts/package_pages.py --slug "$(PAGE_SLUG)"
 
 ifneq ($(MAKECMDGOALS),tidy)
 ifneq ($(MAKECMDGOALS),clean)
@@ -265,4 +264,3 @@ endif
 endif
 endif
 endif
-

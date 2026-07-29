@@ -1,0 +1,34 @@
+name: Generate Alamo coverage
+description: Build and test 2D and 3D coverage configurations
+
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/configure-build
+      with:
+        dimension: "2"
+        compiler: g++
+        amrex-variant: 2d-g++
+        configure-flags: --coverage
+
+    - uses: ./.github/actions/configure-build
+      with:
+        dimension: "3"
+        compiler: g++
+        amrex-variant: 3d-g++
+        configure-flags: --coverage
+
+    - name: Run coverage suite
+      shell: bash
+      run: |
+        scripts/runtests.py \
+          --serial \
+          --timeout=50 \
+          --permit-timeout \
+          --coverage \
+          --no-backspace \
+          --comp=g++
+
+    - name: Generate coverage report
+      shell: bash
+      run: make cov-report

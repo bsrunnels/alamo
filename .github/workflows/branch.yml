@@ -1,0 +1,61 @@
+name: Branch commit
+
+on:
+  push:
+    branches-ignore:
+      - master
+      - development
+      - paper
+      - candidate
+      - candidate-install
+      - candidate-performance
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: branch-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Style and documentation checks
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/alamo-ci:ubuntu-24.04
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tab convention
+        run: .github/workflows/style/check_tabs.py
+      - name: EditorConfig
+        run: eclint check src/
+      - name: Documentation coverage
+        run: python3 scripts/checkdoc.py
+
+  regression:
+    name: 2D GCC regression
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/alamo-ci:ubuntu-24.04
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/regression
+        with:
+          dimension: "2"
+          compiler: g++
+          amrex-variant: 2d-g++
+          runtests-flags: --no-coverage
+          report-name: branch-2d-gcc
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-branch-2d-gcc
+          path: branch-2d-gcc

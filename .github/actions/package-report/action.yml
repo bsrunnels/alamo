@@ -1,0 +1,30 @@
+name: Package regression report
+description: Collect an Alamo HTML test report and summarize it
+
+inputs:
+  name:
+    description: Report directory name
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Create report bundle
+      shell: bash
+      run: python3 scripts/package_report.py --name "${{ inputs.name }}"
+
+    - name: Add report summary
+      shell: bash
+      run: |
+        set -eu -o pipefail
+        name="${{ inputs.name }}"
+        {
+          echo "### Report bundle: ${name}"
+          if [ -d "${name}" ]; then
+            echo "Files: $(find "${name}" -type f | wc -l)"
+            echo "Run pages: $(find "${name}/report" -maxdepth 1 -type f -name '*.html' 2>/dev/null | wc -l)"
+            echo "Assets: $(find "${name}/tests" -type f 2>/dev/null | wc -l)"
+          else
+            echo "Report directory missing"
+          fi
+        } >> "${GITHUB_STEP_SUMMARY}"

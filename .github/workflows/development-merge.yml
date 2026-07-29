@@ -1,0 +1,224 @@
+name: Development merge
+
+on:
+  push:
+    branches: [development]
+
+permissions:
+  contents: read
+  packages: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: development-merge
+  cancel-in-progress: true
+
+jobs:
+  detect-image-changes:
+    name: Detect CI image changes
+    runs-on: ubuntu-24.04
+    outputs:
+      changed: ${{ steps.changes.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Compare image inputs
+        id: changes
+        shell: bash
+        run: |
+          set -eu -o pipefail
+          before="${{ github.event.before }}"
+          if [ "${before}" = "0000000000000000000000000000000000000000" ]; then
+            changed=true
+          elif git diff --quiet "${before}" "${{ github.sha }}" -- \
+              .github/actions/build-ci-image \
+              .github/containers \
+              .github/workflows/dependencies-ubuntu-22.04.sh \
+              .github/workflows/dependencies-ubuntu-24.04.sh \
+              configure; then
+            changed=false
+          else
+            changed=true
+          fi
+          echo "changed=${changed}" >> "${GITHUB_OUTPUT}"
+
+  build-images:
+    name: Refresh Ubuntu ${{ matrix.ubuntu }} image
+    needs: detect-image-changes
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        ubuntu: ["22.04", "24.04"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and publish
+        if: needs.detect-image-changes.outputs.changed == 'true'
+        uses: ./.github/actions/build-ci-image
+        with:
+          ubuntu-version: ${{ matrix.ubuntu }}
+          image: ${{ github.repository_owner }}/alamo-ci
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+  documentation:
+    name: Build development documentation
+    needs: build-images
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/alamo-ci:ubuntu-24.04
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/build-docs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: docs/build/html
+
+  coverage:
+    name: Coverage
+    needs: build-images
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/alamo-ci:ubuntu-24.04
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/coverage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: cov
+
+  flamegraphs:
+    name: Flame graphs / 2D Clang
+    needs: build-images
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/alamo-ci:ubuntu-24.04
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/regression
+        with:
+          dimension: "2"
+          compiler: clang++
+          amrex-variant: 2d-clang++
+          configure-flags: --perf
+          runtests-flags: --no-coverage --perf
+          report-name: flamegraphs-2d-clang
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-flamegraphs-2d-clang
+          path: flamegraphs-2d-clang
+
+  performance:
+    name: Performance / scooter
+    runs-on: scooter
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build 2D
+        run: |
+          ./configure --dim=2 --comp=g++
+          make -j8
+          ./bin/test-2d-g++
+      - name: Build 3D
+        run: |
+          ./configure --dim=3 --comp=g++
+          make -j8
+          ./bin/test-3d-g++
+      - name: Run performance suite
+        run: >-
+          scripts/runtests.py
+          --benchmark=scooter
+          --post=/opt/post.py
+          --permissive
+          --no-backspace
+          --post-timeout=10
+          --comp=g++
+      - name: Package report
+        if: always()
+        uses: ./.github/actions/package-report
+        with:
+          name: performance-scooter
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-performance-scooter
+          path: performance-scooter
+
+  assemble-pages:
+    name: Assemble development site
+    needs: [documentation, coverage, flamegraphs, performance]
+    if: >-
+      ${{
+        always() &&
+        needs.documentation.result == 'success' &&
+        needs.coverage.result == 'success'
+      }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: documentation
+          path: pages-input/docs
+      - uses: actions/download-artifact@v4
+        with:
+          name: coverage
+          path: pages-input/cov
+      - name: Download reports
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: report-*
+          path: pages-input/reports
+      - name: Package versioned site
+        run: >-
+          python3 scripts/package_pages.py
+          --slug development
+          --docs pages-input/docs
+          --coverage pages-input/cov
+          --reports pages-input/reports
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: githubpages
+
+  deploy-pages:
+    name: Publish development site
+    needs: assemble-pages
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}docs/development/
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Verify development documentation
+        run: >-
+          curl --fail --silent --show-error
+          --retry 5 --retry-delay 5
+          "${{ steps.deployment.outputs.page_url }}docs/development/"
+      - name: Probe retained master documentation
+        shell: bash
+        run: |
+          if ! curl --fail --silent \
+              "${{ steps.deployment.outputs.page_url }}docs/master/" >/dev/null; then
+            echo "::warning::The master Pages prefix was not retained; persistent site assembly is required."
+          fi

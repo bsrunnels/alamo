@@ -1,0 +1,362 @@
+name: Master PR
+
+on:
+  pull_request:
+    branches: [master]
+
+permissions:
+  contents: read
+  packages: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: master-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Style and documentation checks
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/alamo-ci:ubuntu-24.04
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: .github/workflows/style/check_tabs.py
+      - run: eclint check src/
+      - run: python3 scripts/checkdoc.py
+
+  regression:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-${{ matrix.ubuntu }}
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/alamo-ci:ubuntu-${{ matrix.ubuntu }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Ubuntu 22.04 / 2D / GCC
+            artifact: ubuntu-22.04-2d-gcc
+            ubuntu: "22.04"
+            dimension: "2"
+            compiler: g++
+            amrex: 2d-g++
+            configure_flags: ""
+            runtests_flags: --no-coverage
+            mpirun_flags: ""
+          - name: Ubuntu 24.04 / 2D / GCC
+            artifact: ubuntu-24.04-2d-gcc
+            ubuntu: "24.04"
+            dimension: "2"
+            compiler: g++
+            amrex: 2d-g++
+            configure_flags: ""
+            runtests_flags: --no-coverage
+            mpirun_flags: --oversubscribe
+          - name: Ubuntu 24.04 / 3D / GCC
+            artifact: ubuntu-24.04-3d-gcc
+            ubuntu: "24.04"
+            dimension: "3"
+            compiler: g++
+            amrex: 3d-g++
+            configure_flags: ""
+            runtests_flags: --no-coverage
+            mpirun_flags: --oversubscribe
+          - name: Ubuntu 24.04 / 2D / Clang + flame graphs
+            artifact: ubuntu-24.04-2d-clang
+            ubuntu: "24.04"
+            dimension: "2"
+            compiler: clang++
+            amrex: 2d-clang++
+            configure_flags: --perf
+            runtests_flags: --no-coverage --perf
+            mpirun_flags: --oversubscribe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/regression
+        with:
+          dimension: ${{ matrix.dimension }}
+          compiler: ${{ matrix.compiler }}
+          amrex-variant: ${{ matrix.amrex }}
+          configure-flags: ${{ matrix.configure_flags }}
+          runtests-flags: ${{ matrix.runtests_flags }}
+          mpirun-flags: ${{ matrix.mpirun_flags }}
+          report-name: ${{ matrix.artifact }}
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+
+  memory:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/alamo-ci:ubuntu-24.04
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ASan / GCC
+            artifact: memcheck-asan-gcc
+            compiler: g++
+            amrex: 2d-debug-g++
+            tool: asan
+          - name: ASan / Clang
+            artifact: memcheck-asan-clang
+            compiler: clang++
+            amrex: 2d-debug-clang++
+            tool: asan
+          - name: MSan / Clang
+            artifact: memcheck-msan-clang
+            compiler: clang++
+            amrex: 2d-debug-clang++
+            tool: msan
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/regression
+        with:
+          dimension: "2"
+          compiler: ${{ matrix.compiler }}
+          amrex-variant: ${{ matrix.amrex }}
+          configure-flags: --debug --memcheck --memcheck-tool=${{ matrix.tool }}
+          runtests-flags: --debug --memcheck=${{ matrix.tool }} --permit-timeout --permit-skips
+          mpi: mpich
+          parallel-check: "false"
+          report-name: ${{ matrix.artifact }}
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+
+  documentation:
+    name: Build documentation
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/alamo-ci:ubuntu-24.04
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/build-docs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: documentation
+          path: docs/build/html
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/alamo-ci:ubuntu-24.04
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/coverage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: cov
+
+  install-linux:
+    name: Install / Ubuntu ${{ matrix.ubuntu }}
+    runs-on: ubuntu-${{ matrix.ubuntu }}
+    strategy:
+      fail-fast: false
+      matrix:
+        ubuntu: ["22.04", "24.04"]
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash ".github/workflows/dependencies-ubuntu-${{ matrix.ubuntu }}.sh"
+      - run: bash .github/workflows/build-and-test.sh
+
+  install-python:
+    name: Python interface
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash .github/workflows/dependencies-ubuntu-24.04.sh
+      - run: bash .github/workflows/python.sh
+
+  install-macos:
+    name: Install / macOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash .github/workflows/install-macos.sh
+
+  performance:
+    name: Release performance / scooter
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: scooter
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build 2D and 3D
+        run: |
+          ./configure --dim=2 --comp=g++
+          make -j8
+          ./bin/test-2d-g++
+          ./configure --dim=3 --comp=g++
+          make -j8
+          ./bin/test-3d-g++
+      - name: Run performance suite
+        run: >-
+          scripts/runtests.py
+          --benchmark=scooter
+          --post=/opt/post.py
+          --permissive
+          --no-backspace
+          --post-timeout=10
+          --comp=g++
+      - name: Package report
+        if: always()
+        uses: ./.github/actions/package-report
+        with:
+          name: performance-scooter
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-performance-scooter
+          path: performance-scooter
+
+  assemble-pages:
+    name: Assemble release-candidate documentation
+    needs: [documentation, coverage, regression, memory, performance]
+    if: >-
+      ${{
+        always() &&
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        needs.documentation.result == 'success' &&
+        needs.coverage.result == 'success'
+      }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: documentation
+          path: pages-input/docs
+      - uses: actions/download-artifact@v4
+        with:
+          name: coverage
+          path: pages-input/cov
+      - name: Download available reports
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          pattern: report-*
+          path: pages-input/reports
+      - name: Package versioned site
+        run: >-
+          python3 scripts/package_pages.py
+          --slug "pr-${{ github.event.pull_request.number }}"
+          --docs pages-input/docs
+          --coverage pages-input/cov
+          --reports pages-input/reports
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: githubpages
+
+  deploy-pages:
+    name: Publish release-candidate documentation
+    needs: assemble-pages
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}docs/pr-${{ github.event.pull_request.number }}/
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Verify PR documentation
+        run: >-
+          curl --fail --silent --show-error
+          --retry 5 --retry-delay 5
+          "${{ steps.deployment.outputs.page_url }}docs/pr-${{ github.event.pull_request.number }}/"
+      - name: Probe retained long-lived documentation
+        shell: bash
+        run: |
+          for slug in master development; do
+            if ! curl --fail --silent \
+                "${{ steps.deployment.outputs.page_url }}docs/${slug}/" >/dev/null; then
+              echo "::warning::The ${slug} Pages prefix was not retained; persistent site assembly is required."
+            fi
+          done
+
+  required:
+    name: Master required checks
+    if: always()
+    needs:
+      - checks
+      - regression
+      - memory
+      - documentation
+      - coverage
+      - install-linux
+      - install-python
+      - install-macos
+      - performance
+      - deploy-pages
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require successful release checks
+        shell: bash
+        run: |
+          set -eu -o pipefail
+          required_results=(
+            "${{ needs.checks.result }}"
+            "${{ needs.regression.result }}"
+            "${{ needs.memory.result }}"
+            "${{ needs.documentation.result }}"
+            "${{ needs.coverage.result }}"
+            "${{ needs.install-linux.result }}"
+            "${{ needs.install-python.result }}"
+            "${{ needs.install-macos.result }}"
+          )
+          for result in "${required_results[@]}"; do
+            if [ "${result}" != success ]; then
+              echo "A required master check finished with status: ${result}" >&2
+              exit 1
+            fi
+          done
+
+          performance_result="${{ needs.performance.result }}"
+          pages_result="${{ needs.deploy-pages.result }}"
+          if [ "${{ github.event.pull_request.head.repo.full_name }}" = "${{ github.repository }}" ]; then
+            if [ "${performance_result}" != success ]; then
+              echo "Release performance finished with status: ${performance_result}" >&2
+              exit 1
+            fi
+            if [ "${pages_result}" != success ]; then
+              echo "PR documentation finished with status: ${pages_result}" >&2
+              exit 1
+            fi
+          else
+            if [ "${performance_result}" != skipped ]; then
+              echo "Fork PR performance finished unexpectedly with status: ${performance_result}" >&2
+              exit 1
+            fi
+            if [ "${pages_result}" != skipped ]; then
+              echo "Fork PR documentation finished unexpectedly with status: ${pages_result}" >&2
+              exit 1
+            fi
+          fi

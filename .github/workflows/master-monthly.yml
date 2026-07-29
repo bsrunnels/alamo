@@ -1,0 +1,219 @@
+name: Master monthly
+
+on:
+  schedule:
+    - cron: "17 6 1 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: master-monthly
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    name: Style and documentation build
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/alamo-ci:ubuntu-24.04
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: .github/workflows/style/check_tabs.py
+      - run: eclint check src/
+      - run: python3 scripts/checkdoc.py
+      - uses: ./.github/actions/build-docs
+
+  regression:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-${{ matrix.ubuntu }}
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/alamo-ci:ubuntu-${{ matrix.ubuntu }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Ubuntu 22.04 / 2D / GCC
+            artifact: monthly-ubuntu-22.04-2d-gcc
+            ubuntu: "22.04"
+            dimension: "2"
+            compiler: g++
+            amrex: 2d-g++
+            configure_flags: ""
+            runtests_flags: --no-coverage
+            mpirun_flags: ""
+          - name: Ubuntu 24.04 / 2D / GCC
+            artifact: monthly-ubuntu-24.04-2d-gcc
+            ubuntu: "24.04"
+            dimension: "2"
+            compiler: g++
+            amrex: 2d-g++
+            configure_flags: ""
+            runtests_flags: --no-coverage
+            mpirun_flags: --oversubscribe
+          - name: Ubuntu 24.04 / 3D / GCC
+            artifact: monthly-ubuntu-24.04-3d-gcc
+            ubuntu: "24.04"
+            dimension: "3"
+            compiler: g++
+            amrex: 3d-g++
+            configure_flags: ""
+            runtests_flags: --no-coverage
+            mpirun_flags: --oversubscribe
+          - name: Ubuntu 24.04 / 2D / Clang + flame graphs
+            artifact: monthly-ubuntu-24.04-2d-clang
+            ubuntu: "24.04"
+            dimension: "2"
+            compiler: clang++
+            amrex: 2d-clang++
+            configure_flags: --perf
+            runtests_flags: --no-coverage --perf
+            mpirun_flags: --oversubscribe
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/regression
+        with:
+          dimension: ${{ matrix.dimension }}
+          compiler: ${{ matrix.compiler }}
+          amrex-variant: ${{ matrix.amrex }}
+          configure-flags: ${{ matrix.configure_flags }}
+          runtests-flags: ${{ matrix.runtests_flags }}
+          mpirun-flags: ${{ matrix.mpirun_flags }}
+          report-name: ${{ matrix.artifact }}
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+
+  memory:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/alamo-ci:ubuntu-24.04
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Monthly ASan / GCC
+            artifact: monthly-memcheck-asan-gcc
+            compiler: g++
+            amrex: 2d-debug-g++
+            tool: asan
+          - name: Monthly ASan / Clang
+            artifact: monthly-memcheck-asan-clang
+            compiler: clang++
+            amrex: 2d-debug-clang++
+            tool: asan
+          - name: Monthly MSan / Clang
+            artifact: monthly-memcheck-msan-clang
+            compiler: clang++
+            amrex: 2d-debug-clang++
+            tool: msan
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/regression
+        with:
+          dimension: "2"
+          compiler: ${{ matrix.compiler }}
+          amrex-variant: ${{ matrix.amrex }}
+          configure-flags: --debug --memcheck --memcheck-tool=${{ matrix.tool }}
+          runtests-flags: --debug --memcheck=${{ matrix.tool }} --permit-timeout --permit-skips
+          mpi: mpich
+          parallel-check: "false"
+          report-name: ${{ matrix.artifact }}
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-${{ matrix.artifact }}
+          path: ${{ matrix.artifact }}
+
+  coverage:
+    name: Monthly coverage
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/alamo-ci:ubuntu-24.04
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/coverage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: monthly-coverage
+          path: cov
+
+  install-linux:
+    name: Install / Ubuntu ${{ matrix.ubuntu }}
+    runs-on: ubuntu-${{ matrix.ubuntu }}
+    strategy:
+      fail-fast: false
+      matrix:
+        ubuntu: ["22.04", "24.04"]
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash ".github/workflows/dependencies-ubuntu-${{ matrix.ubuntu }}.sh"
+      - run: bash .github/workflows/build-and-test.sh
+
+  install-python:
+    name: Python interface
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash .github/workflows/dependencies-ubuntu-24.04.sh
+      - run: bash .github/workflows/python.sh
+
+  install-macos:
+    name: Install / macOS
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash .github/workflows/install-macos.sh
+
+  performance:
+    name: Monthly performance / scooter
+    runs-on: scooter
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build 2D and 3D
+        run: |
+          ./configure --dim=2 --comp=g++
+          make -j8
+          ./bin/test-2d-g++
+          ./configure --dim=3 --comp=g++
+          make -j8
+          ./bin/test-3d-g++
+      - name: Run performance suite
+        run: >-
+          scripts/runtests.py
+          --benchmark=scooter
+          --post=/opt/post.py
+          --permissive
+          --no-backspace
+          --post-timeout=10
+          --comp=g++
+      - name: Package report
+        if: always()
+        uses: ./.github/actions/package-report
+        with:
+          name: monthly-performance-scooter
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-monthly-performance-scooter
+          path: monthly-performance-scooter

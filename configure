@@ -356,6 +356,7 @@ elif (args.amrex != ""):
     amrex_profiling = False
     amrex_debug = False
     amrex_omp = False
+    githash = None
     for line in open(args.amrex + "/include/AMReX_Config.H"):
         if "define BL_SPACEDIM 1" in line or "define AMREX_SPACEDIM 1" in line: amrex_spacedim = 1
         if "define BL_SPACEDIM 2" in line or "define AMREX_SPACEDIM 2" in line: amrex_spacedim = 2
@@ -363,7 +364,8 @@ elif (args.amrex != ""):
         if "AMREX_DEBUG 1" in line: amrex_debug = True
         if "USE_OMP 1" in line: amrex_omp = True
         if "PROFILING 1" in line: amrex_profiling = True
-        githash = line.replace("#define AMREX_GIT_VERSION ","").replace('"','').replace('\n','') if "AMREX_GIT_VERSION" in line else None
+        if "AMREX_GIT_VERSION" in line:
+            githash = line.replace("#define AMREX_GIT_VERSION ","").replace('"','').replace('\n','')
         
         
     if args.dim != amrex_spacedim:
@@ -382,6 +384,9 @@ elif (args.amrex != ""):
 
     message("AMReX Directory", args.amrex)
     if githash: message("AMReX Git commit", githash)
+    # AMREX_TARGET is the installation prefix consumed by the Makefile.
+    # Keep AMREX as a compatibility alias for older local make fragments.
+    f.write("AMREX_TARGET = " + args.amrex + "\n")
     f.write("AMREX = " + args.amrex + "\n")
 else:
     warning("AMReX path not specified. This may cause compile errors.")
@@ -745,4 +750,3 @@ if not args.compile_commands:
 
     with open(Path("compile_commands.json"), "w") as f:
         json.dump(command_objects, f, indent=4)
-

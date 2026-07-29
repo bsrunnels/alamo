@@ -1,0 +1,73 @@
+name: Configure and build Alamo
+description: Build Alamo against one AMReX installation from the CI image
+
+inputs:
+  dimension:
+    description: Spatial dimension
+    required: true
+  compiler:
+    description: C++ compiler executable
+    required: true
+  amrex-variant:
+    description: Directory name below /opt/amrex
+    required: true
+  configure-flags:
+    description: Additional flags passed to configure
+    required: false
+    default: ""
+  jobs:
+    description: Parallel make jobs
+    required: false
+    default: "2"
+  mpi:
+    description: MPI alternative to select (auto, openmpi, or mpich)
+    required: false
+    default: auto
+
+runs:
+  using: composite
+  steps:
+    - name: Select MPI implementation
+      shell: bash
+      run: |
+        set -eu -o pipefail
+        case "${{ inputs.mpi }}" in
+          auto)
+            ;;
+          openmpi)
+            sudo update-alternatives --set mpi /usr/bin/mpicc.openmpi
+            sudo update-alternatives --set mpirun /usr/bin/mpirun.openmpi
+            ;;
+          mpich)
+            sudo update-alternatives --set mpi /usr/bin/mpicc.mpich
+            sudo update-alternatives --set mpirun /usr/bin/mpirun.mpich
+            ;;
+          *)
+            echo "Unknown MPI implementation: ${{ inputs.mpi }}" >&2
+            exit 2
+            ;;
+        esac
+
+    - name: Expose bundled FlameGraph tools
+      shell: bash
+      run: |
+        set -eu -o pipefail
+        if [ -d /opt/FlameGraph ]; then
+          mkdir -p ext/brendangregg
+          ln -sfn /opt/FlameGraph ext/brendangregg/FlameGraph
+        fi
+
+    - name: Configure
+      shell: bash
+      run: |
+        set -eu -o pipefail
+        test -f "/opt/amrex/${{ inputs.amrex-variant }}/lib/libamrex.a"
+        ./configure \
+          --dim="${{ inputs.dimension }}" \
+          --comp="${{ inputs.compiler }}" \
+          --amrex="/opt/amrex/${{ inputs.amrex-variant }}" \
+          ${{ inputs.configure-flags }}
+
+    - name: Build
+      shell: bash
+      run: make -j"${{ inputs.jobs }}"

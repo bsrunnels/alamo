@@ -1,0 +1,21 @@
+name: Build Alamo documentation
+description: Build both dimensions required by current upstream docs, then run Sphinx
+
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/configure-build
+      with:
+        dimension: "2"
+        compiler: clang++
+        amrex-variant: 2d-clang++
+
+    - uses: ./.github/actions/configure-build
+      with:
+        dimension: "3"
+        compiler: clang++
+        amrex-variant: 3d-clang++
+
+    - name: Generate documentation
+      shell: bash
+      run: make docs

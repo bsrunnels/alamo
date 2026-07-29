@@ -1,0 +1,73 @@
+name: Run Alamo regression tests
+description: Build one configuration, run its tests, and package the report
+
+inputs:
+  dimension:
+    required: true
+  compiler:
+    required: true
+  amrex-variant:
+    required: true
+  configure-flags:
+    required: false
+    default: ""
+  runtests-flags:
+    required: false
+    default: ""
+  mpi:
+    required: false
+    default: auto
+  parallel-check:
+    required: false
+    default: "true"
+  mpirun-flags:
+    required: false
+    default: --oversubscribe
+  report-name:
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - uses: ./.github/actions/configure-build
+      with:
+        dimension: ${{ inputs.dimension }}
+        compiler: ${{ inputs.compiler }}
+        amrex-variant: ${{ inputs.amrex-variant }}
+        configure-flags: ${{ inputs.configure-flags }}
+        mpi: ${{ inputs.mpi }}
+
+    - name: Check MPI execution
+      if: inputs.parallel-check == 'true'
+      shell: bash
+      run: |
+        set -eu -o pipefail
+        mpi_flags=()
+        if [ -n "${{ inputs.mpirun-flags }}" ]; then
+          mpi_flags+=(--mpirun-flags="${{ inputs.mpirun-flags }}")
+        fi
+        scripts/runtests.py tests/Unit/ \
+          --check-mpi \
+          --dim="${{ inputs.dimension }}" \
+          --comp="${{ inputs.compiler }}" \
+          --no-backspace \
+          "${mpi_flags[@]}" \
+          ${{ inputs.runtests-flags }}
+
+    - name: Run regression suite
+      shell: bash
+      run: |
+        scripts/runtests.py \
+          --serial \
+          --dim="${{ inputs.dimension }}" \
+          --comp="${{ inputs.compiler }}" \
+          --benchmark=github \
+          --timeout=200 \
+          --no-backspace \
+          ${{ inputs.runtests-flags }}
+
+    - name: Package report
+      if: always()
+      uses: ./.github/actions/package-report
+      with:
+        name: ${{ inputs.report-name }}

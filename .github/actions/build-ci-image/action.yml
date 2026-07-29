@@ -1,0 +1,62 @@
+name: Build Alamo CI image
+description: Build one Ubuntu image containing all supported AMReX variants
+
+inputs:
+  ubuntu-version:
+    required: true
+  registry:
+    required: false
+    default: ghcr.io
+  image:
+    description: Image name without registry or tag
+    required: true
+  username:
+    required: true
+  password:
+    required: true
+  push:
+    required: false
+    default: "true"
+  amrex-version:
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve supported AMReX version
+      id: version
+      shell: bash
+      run: |
+        set -eu -o pipefail
+        version="${{ inputs.amrex-version }}"
+        if [ -z "${version}" ]; then
+          version="$(python3 -c 'import pathlib, re; text = pathlib.Path("configure").read_text(); print(re.search(r"^amrex_current_version = \"([^\"]+)\"", text, re.MULTILINE).group(1))')"
+        fi
+        echo "value=${version}" >> "${GITHUB_OUTPUT}"
+
+    - name: Log in to container registry
+      if: inputs.push == 'true'
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ inputs.registry }}
+        username: ${{ inputs.username }}
+        password: ${{ inputs.password }}
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build CI image
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: .github/containers/ubuntu/Dockerfile
+        push: ${{ inputs.push == 'true' }}
+        build-args: |
+          UBUNTU_VERSION=${{ inputs.ubuntu-version }}
+          AMREX_VERSION=${{ steps.version.outputs.value }}
+        tags: |
+          ${{ inputs.registry }}/${{ inputs.image }}:ubuntu-${{ inputs.ubuntu-version }}
+          ${{ inputs.registry }}/${{ inputs.image }}:ubuntu-${{ inputs.ubuntu-version }}-amrex-${{ steps.version.outputs.value }}
+        cache-from: type=gha,scope=ubuntu-${{ inputs.ubuntu-version }}
+        cache-to: type=gha,mode=min,scope=ubuntu-${{ inputs.ubuntu-version }}
