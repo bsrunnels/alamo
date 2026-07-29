@@ -7,8 +7,11 @@ set -eu -o pipefail
 source_dir=/tmp/amrex
 install_root=/opt/amrex
 
-git clone --depth 1 --branch "${AMREX_VERSION}" \
-  https://github.com/AMReX-Codes/amrex.git "${source_dir}"
+git init "${source_dir}"
+git -C "${source_dir}" remote add origin https://github.com/AMReX-Codes/amrex.git
+git -C "${source_dir}" fetch --depth 1 origin \
+  "refs/tags/${AMREX_VERSION}:refs/tags/${AMREX_VERSION}"
+git -C "${source_dir}" checkout --detach "${AMREX_VERSION}^{commit}"
 mkdir -p "${install_root}"
 
 select_mpi()
@@ -47,7 +50,9 @@ build_variant()
   suffix="${suffix}-${compiler}"
 
   select_mpi "${mpi}"
-  make -C "${source_dir}" realclean
+  if [ -f "${source_dir}/GNUmakefile" ]; then
+    make -C "${source_dir}" realclean
+  fi
   (
     cd "${source_dir}"
     ./configure \

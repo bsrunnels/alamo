@@ -7,8 +7,11 @@ set -eu -o pipefail
 
 source_dir="${RUNNER_TEMP}/alamo-amrex-source"
 
-git clone --depth 1 --branch "${AMREX_VERSION}" \
-  https://github.com/AMReX-Codes/amrex.git "${source_dir}"
+git init "${source_dir}"
+git -C "${source_dir}" remote add origin https://github.com/AMReX-Codes/amrex.git
+git -C "${source_dir}" fetch --depth 1 origin \
+  "refs/tags/${AMREX_VERSION}:refs/tags/${AMREX_VERSION}"
+git -C "${source_dir}" checkout --detach "${AMREX_VERSION}^{commit}"
 mkdir -p "${AMREX_INSTALL_ROOT}"
 
 build_variant()
@@ -24,7 +27,9 @@ build_variant()
   fi
   suffix="${suffix}-clang++"
 
-  make -C "${source_dir}" realclean
+  if [ -f "${source_dir}/GNUmakefile" ]; then
+    make -C "${source_dir}" realclean
+  fi
   (
     cd "${source_dir}"
     ./configure \
