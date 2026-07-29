@@ -1,0 +1,39 @@
+name: Set up native macOS CI environment
+description: Restore or build the native AMReX variants used on macOS runners
+
+runs:
+  using: composite
+  steps:
+    - name: Install native dependencies
+      shell: bash
+      run: brew install open-mpi eigen libpng
+
+    - name: Resolve environment identity
+      id: identity
+      shell: bash
+      run: |
+        set -eu -o pipefail
+        version="$(python3 -c 'import pathlib, re; text = pathlib.Path("configure").read_text(); print(re.search(r"^amrex_current_version = \"([^\"]+)\"", text, re.MULTILINE).group(1))')"
+        toolchain="$({
+          sw_vers -productVersion
+          uname -m
+          clang++ --version | head -1
+          brew list --versions open-mpi
+        } | shasum -a 256 | cut -d' ' -f1)"
+        echo "amrex-version=${version}" >> "${GITHUB_OUTPUT}"
+        echo "toolchain=${toolchain}" >> "${GITHUB_OUTPUT}"
+
+    - name: Restore native AMReX environment
+      id: cache
+      uses: actions/cache@v4
+      with:
+        path: .cache/alamo-ci/macos/amrex
+        key: alamo-macos-${{ runner.arch }}-${{ steps.identity.outputs.toolchain }}-amrex-${{ steps.identity.outputs.amrex-version }}-${{ hashFiles('.github/environments/macos/build-amrex.sh') }}
+
+    - name: Build native AMReX environment
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        AMREX_VERSION="${{ steps.identity.outputs.amrex-version }}" \
+        AMREX_INSTALL_ROOT="${GITHUB_WORKSPACE}/.cache/alamo-ci/macos/amrex" \
+        bash .github/environments/macos/build-amrex.sh

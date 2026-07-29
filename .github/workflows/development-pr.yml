@@ -159,9 +159,43 @@ jobs:
       - uses: actions/checkout@v4
       - run: bash .github/workflows/install-macos.sh
 
+  macos-environment:
+    name: Prepare macOS environment
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-macos
+
+  macos-regression:
+    name: macOS / ${{ matrix.dimension }}D / Clang
+    needs: macos-environment
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dimension: ["2", "3"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-macos
+      - uses: ./.github/actions/regression
+        with:
+          dimension: ${{ matrix.dimension }}
+          compiler: clang++
+          amrex-variant: ${{ matrix.dimension }}d-clang++
+          amrex-root: ${{ github.workspace }}/.cache/alamo-ci/macos/amrex
+          runtests-flags: --no-coverage
+          mpirun-flags: ""
+          report-name: macos-${{ matrix.dimension }}d-clang
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-macos-${{ matrix.dimension }}d-clang
+          path: macos-${{ matrix.dimension }}d-clang
+
   assemble-pages:
     name: Assemble PR documentation
-    needs: [documentation, coverage, regression]
+    needs: [documentation, coverage, regression, macos-regression]
     if: >-
       ${{
         always() &&
@@ -236,6 +270,7 @@ jobs:
       - install-linux
       - install-python
       - install-macos
+      - macos-regression
       - deploy-pages
     runs-on: ubuntu-24.04
     steps:
@@ -251,6 +286,7 @@ jobs:
             "${{ needs.install-linux.result }}"
             "${{ needs.install-python.result }}"
             "${{ needs.install-macos.result }}"
+            "${{ needs.macos-regression.result }}"
           )
           for result in "${required_results[@]}"; do
             if [ "${result}" != success ]; then

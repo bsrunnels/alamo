@@ -11,6 +11,10 @@ inputs:
   amrex-variant:
     description: Directory name below /opt/amrex
     required: true
+  amrex-root:
+    description: Directory containing the named AMReX variants
+    required: false
+    default: /opt/amrex
   configure-flags:
     description: Additional flags passed to configure
     required: false
@@ -61,11 +65,11 @@ runs:
       shell: bash
       run: |
         set -eu -o pipefail
-        test -f "/opt/amrex/${{ inputs.amrex-variant }}/lib/libamrex.a"
+        test -f "${{ inputs.amrex-root }}/${{ inputs.amrex-variant }}/lib/libamrex.a"
         ./configure \
           --dim="${{ inputs.dimension }}" \
           --comp="${{ inputs.compiler }}" \
-          --amrex="/opt/amrex/${{ inputs.amrex-variant }}" \
+          --amrex="${{ inputs.amrex-root }}/${{ inputs.amrex-variant }}" \
           ${{ inputs.configure-flags }}
 
     - name: Build

@@ -184,6 +184,40 @@ jobs:
       - uses: actions/checkout@v4
       - run: bash .github/workflows/install-macos.sh
 
+  macos-environment:
+    name: Prepare monthly macOS environment
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-macos
+
+  macos-regression:
+    name: Monthly macOS / ${{ matrix.dimension }}D / Clang
+    needs: macos-environment
+    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dimension: ["2", "3"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-macos
+      - uses: ./.github/actions/regression
+        with:
+          dimension: ${{ matrix.dimension }}
+          compiler: clang++
+          amrex-variant: ${{ matrix.dimension }}d-clang++
+          amrex-root: ${{ github.workspace }}/.cache/alamo-ci/macos/amrex
+          runtests-flags: --no-coverage
+          mpirun-flags: ""
+          report-name: monthly-macos-${{ matrix.dimension }}d-clang
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-monthly-macos-${{ matrix.dimension }}d-clang
+          path: monthly-macos-${{ matrix.dimension }}d-clang
+
   performance:
     name: Monthly performance / scooter
     runs-on: scooter

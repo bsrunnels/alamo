@@ -16,10 +16,11 @@ concurrency:
 
 jobs:
   detect-image-changes:
-    name: Detect CI image changes
+    name: Detect CI environment changes
     runs-on: ubuntu-24.04
     outputs:
-      changed: ${{ steps.changes.outputs.changed }}
+      linux-changed: ${{ steps.changes.outputs.linux-changed }}
+      macos-changed: ${{ steps.changes.outputs.macos-changed }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -31,18 +32,30 @@ jobs:
           set -eu -o pipefail
           before="${{ github.event.before }}"
           if [ "${before}" = "0000000000000000000000000000000000000000" ]; then
-            changed=true
-          elif git diff --quiet "${before}" "${{ github.sha }}" -- \
-              .github/actions/build-ci-image \
-              .github/containers \
-              .github/workflows/dependencies-ubuntu-22.04.sh \
-              .github/workflows/dependencies-ubuntu-24.04.sh \
-              configure; then
-            changed=false
+            linux_changed=true
+            macos_changed=true
           else
-            changed=true
+            if git diff --quiet "${before}" "${{ github.sha }}" -- \
+                .github/actions/build-ci-image \
+                .github/containers \
+                .github/workflows/dependencies-ubuntu-22.04.sh \
+                .github/workflows/dependencies-ubuntu-24.04.sh \
+                configure; then
+              linux_changed=false
+            else
+              linux_changed=true
+            fi
+            if git diff --quiet "${before}" "${{ github.sha }}" -- \
+                .github/actions/setup-macos \
+                .github/environments/macos \
+                configure; then
+              macos_changed=false
+            else
+              macos_changed=true
+            fi
           fi
-          echo "changed=${changed}" >> "${GITHUB_OUTPUT}"
+          echo "linux-changed=${linux_changed}" >> "${GITHUB_OUTPUT}"
+          echo "macos-changed=${macos_changed}" >> "${GITHUB_OUTPUT}"
 
   build-images:
     name: Refresh Ubuntu ${{ matrix.ubuntu }} image
@@ -55,13 +68,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build and publish
-        if: needs.detect-image-changes.outputs.changed == 'true'
+        if: needs.detect-image-changes.outputs.linux-changed == 'true'
         uses: ./.github/actions/build-ci-image
         with:
           ubuntu-version: ${{ matrix.ubuntu }}
           image: ${{ github.repository_owner }}/alamo-ci
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+  refresh-macos-environment:
+    name: Refresh macOS environment
+    needs: detect-image-changes
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and cache
+        if: needs.detect-image-changes.outputs.macos-changed == 'true'
+        uses: ./.github/actions/setup-macos
 
   documentation:
     name: Build development documentation

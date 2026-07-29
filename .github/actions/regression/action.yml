@@ -8,6 +8,9 @@ inputs:
     required: true
   amrex-variant:
     required: true
+  amrex-root:
+    required: false
+    default: /opt/amrex
   configure-flags:
     required: false
     default: ""
@@ -34,6 +37,7 @@ runs:
         dimension: ${{ inputs.dimension }}
         compiler: ${{ inputs.compiler }}
         amrex-variant: ${{ inputs.amrex-variant }}
+        amrex-root: ${{ inputs.amrex-root }}
         configure-flags: ${{ inputs.configure-flags }}
         mpi: ${{ inputs.mpi }}
 

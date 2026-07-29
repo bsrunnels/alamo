@@ -108,7 +108,7 @@ Top-level workflows are organized by repository event:
 - ``master-merge.yml``: image refresh and publication of
   ``/docs/master/``
 - ``master-monthly.yml``: comprehensive scheduled monitoring
-- ``ci-image.yml``: manual bootstrap of the CI images
+- ``ci-image.yml``: manual bootstrap of the CI environments
 
 The PR workflows end in stable ``Development required checks`` and
 ``Master required checks`` jobs. These are the check names configured in the
@@ -119,6 +119,12 @@ matrix check names.
 The Ubuntu 22.04 and 24.04 images each contain all supported AMReX variants
 (2D/3D, GCC/Clang, release/debug). FFT and OpenMP are excluded for now.
 The AMReX version is taken from ``amrex_current_version`` in ``configure``.
+
+GitHub does not support container jobs on macOS runners. The equivalent native
+macOS environment uses a toolchain-keyed Actions cache containing 2D/3D
+release/debug Clang AMReX builds. Development and master PRs run both
+dimensions against that environment while retaining a separate clean-runner
+test of the published macOS installation script.
 
 Published output for a version is assembled beneath ``/docs/<slug>/``, where
 the slug is ``master``, ``development``, or ``pr-###``. Coverage is placed at
