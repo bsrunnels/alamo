@@ -13,6 +13,9 @@ git -C "${source_dir}" fetch --depth 1 origin \
   "refs/tags/${AMREX_VERSION}:refs/tags/${AMREX_VERSION}"
 git -C "${source_dir}" checkout --detach "${AMREX_VERSION}^{commit}"
 mkdir -p "${install_root}"
+amrex_commit="$(git -C "${source_dir}" rev-parse HEAD)"
+printf 'AMReX version=%s commit=%s\n' \
+  "${AMREX_VERSION}" "${amrex_commit}" > "${install_root}/manifest.txt"
 
 select_mpi()
 {
@@ -65,6 +68,9 @@ build_variant()
   )
   make -C "${source_dir}" -j"${BUILD_JOBS}"
   make -C "${source_dir}" install
+  test -f "${install_root}/${suffix}/include/AMReX_Config.H"
+  test -f "${install_root}/${suffix}/lib/libamrex.a"
+  printf '%s mpi=%s\n' "${suffix}" "${mpi}" >> "${install_root}/manifest.txt"
 }
 
 if [ -x /usr/bin/mpicc.openmpi ]; then
@@ -79,6 +85,24 @@ for dimension in 2 3; do
     build_variant "${dimension}" "${compiler}" debug mpich
   done
 done
+
+expected_variants=(
+  2d-g++
+  2d-debug-g++
+  2d-clang++
+  2d-debug-clang++
+  3d-g++
+  3d-debug-g++
+  3d-clang++
+  3d-debug-clang++
+)
+for variant in "${expected_variants[@]}"; do
+  test -f "${install_root}/${variant}/include/AMReX_Config.H"
+  test -f "${install_root}/${variant}/lib/libamrex.a"
+done
+
+echo "Validated prebuilt AMReX variants:"
+cat "${install_root}/manifest.txt"
 
 select_mpi "${release_mpi}"
 rm -rf "${source_dir}"

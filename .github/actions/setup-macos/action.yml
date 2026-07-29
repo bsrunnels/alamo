@@ -37,3 +37,16 @@ runs:
         AMREX_VERSION="${{ steps.identity.outputs.amrex-version }}" \
         AMREX_INSTALL_ROOT="${GITHUB_WORKSPACE}/.cache/alamo-ci/macos/amrex" \
         bash .github/environments/macos/build-amrex.sh
+
+    - name: Validate native AMReX environment
+      shell: bash
+      run: |
+        set -eu -o pipefail
+        root="${GITHUB_WORKSPACE}/.cache/alamo-ci/macos/amrex"
+        for variant in \
+            2d-clang++ 2d-debug-clang++ \
+            3d-clang++ 3d-debug-clang++; do
+          test -f "${root}/${variant}/include/AMReX_Config.H"
+          test -f "${root}/${variant}/lib/libamrex.a"
+        done
+        cat "${root}/manifest.txt"
