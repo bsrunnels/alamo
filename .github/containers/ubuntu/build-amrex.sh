@@ -1,108 +1,112 @@
 #!/usr/bin/env bash
 set -eu -o pipefail
 
+: "${DIMENSION:?DIMENSION is required}"
+: "${COMPILER:?COMPILER is required}"
+: "${MODE:?MODE is required}"
+: "${MPI:?MPI is required}"
 : "${AMREX_VERSION:?AMREX_VERSION is required}"
-: "${BUILD_JOBS:=2}"
+: "${BUILD_JOBS:=1}"
+: "${ALAMO_SOURCE_DIR:=/tmp/alamo}"
+: "${AMREX_INSTALL_ROOT:=/opt/amrex}"
 
-source_dir=/tmp/amrex
-install_root=/opt/amrex
+case "${DIMENSION}" in
+  2|3)
+    ;;
+  *)
+    echo "Unsupported AMReX dimension: ${DIMENSION}" >&2
+    exit 2
+    ;;
+esac
 
-git init "${source_dir}"
-git -C "${source_dir}" remote add origin https://github.com/AMReX-Codes/amrex.git
-git -C "${source_dir}" fetch --depth 1 origin \
-  "refs/tags/${AMREX_VERSION}:refs/tags/${AMREX_VERSION}"
-git -C "${source_dir}" checkout --detach "${AMREX_VERSION}^{commit}"
-mkdir -p "${install_root}"
-amrex_commit="$(git -C "${source_dir}" rev-parse HEAD)"
-printf 'AMReX version=%s commit=%s\n' \
-  "${AMREX_VERSION}" "${amrex_commit}" > "${install_root}/manifest.txt"
+case "${COMPILER}" in
+  g++|clang++)
+    ;;
+  *)
+    echo "Unsupported AMReX compiler: ${COMPILER}" >&2
+    exit 2
+    ;;
+esac
+
+case "${MODE}" in
+  release|debug)
+    ;;
+  *)
+    echo "Unsupported AMReX build mode: ${MODE}" >&2
+    exit 2
+    ;;
+esac
 
 select_mpi()
 {
-  local implementation=$1
-  if [ "${implementation}" = mpich ] && [ -x /usr/bin/mpicc.mpich ]; then
+  case "$1" in
+    auto)
+      if [ -x /usr/bin/mpicc.openmpi ]; then
+        selected_mpi=openmpi
+      else
+        selected_mpi=mpich
+      fi
+      ;;
+    mpich|openmpi)
+      selected_mpi=$1
+      ;;
+    *)
+      echo "Unsupported MPI implementation: $1" >&2
+      exit 2
+      ;;
+  esac
+
+  if [ "${selected_mpi}" = mpich ] && [ -x /usr/bin/mpicc.mpich ]; then
     update-alternatives --set mpi /usr/bin/mpicc.mpich
     update-alternatives --set mpirun /usr/bin/mpirun.mpich
-  elif [ "${implementation}" = openmpi ] && [ -x /usr/bin/mpicc.openmpi ]; then
+  elif [ "${selected_mpi}" = openmpi ] && [ -x /usr/bin/mpicc.openmpi ]; then
     update-alternatives --set mpi /usr/bin/mpicc.openmpi
     update-alternatives --set mpirun /usr/bin/mpirun.openmpi
-  fi
-}
-
-build_variant()
-{
-  local dimension=$1
-  local compiler=$2
-  local mode=$3
-  local mpi=$4
-  local amrex_compiler
-  local suffix="${dimension}d"
-  local debug_flag=
-  local compiler_flag=
-
-  if [ "${compiler}" = "g++" ]; then
-    amrex_compiler=gnu
   else
-    amrex_compiler=llvm
-    compiler_flag="--allow-different-compiler=yes"
+    echo "Requested MPI implementation is unavailable: ${selected_mpi}" >&2
+    exit 1
   fi
-  if [ "${mode}" = debug ]; then
-    suffix="${suffix}-debug"
-    debug_flag="--debug=yes --enable-pic=yes"
-  fi
-  suffix="${suffix}-${compiler}"
-
-  select_mpi "${mpi}"
-  if [ -f "${source_dir}/GNUmakefile" ]; then
-    make -C "${source_dir}" realclean
-  fi
-  (
-    cd "${source_dir}"
-    ./configure \
-      --dim="${dimension}" \
-      --prefix="${install_root}/${suffix}" \
-      --with-fortran=no \
-      --comp="${amrex_compiler}" \
-      ${compiler_flag} \
-      ${debug_flag}
-  )
-  make -C "${source_dir}" -j"${BUILD_JOBS}"
-  make -C "${source_dir}" install
-  test -f "${install_root}/${suffix}/include/AMReX_Config.H"
-  test -f "${install_root}/${suffix}/lib/libamrex.a"
-  printf '%s mpi=%s\n' "${suffix}" "${mpi}" >> "${install_root}/manifest.txt"
 }
 
-if [ -x /usr/bin/mpicc.openmpi ]; then
-  release_mpi=openmpi
+select_mpi "${MPI}"
+
+suffix="${DIMENSION}d"
+if [ "${MODE}" = debug ]; then
+  suffix="${suffix}-debug"
+fi
+suffix="${suffix}-${COMPILER}"
+prefix="${AMREX_INSTALL_ROOT}/${suffix}"
+configure_args=(
+  "--offline"
+  "--no-comp-cmds"
+  "--build-amrex-tag=${AMREX_VERSION}"
+  "--dim=${DIMENSION}"
+  "--comp=${COMPILER}"
+)
+if [ "${MODE}" = debug ]; then
+  configure_args+=("--debug")
 else
-  release_mpi=mpich
+  configure_args+=("--no-debug")
 fi
 
-for dimension in 2 3; do
-  for compiler in g++ clang++; do
-    build_variant "${dimension}" "${compiler}" release "${release_mpi}"
-    build_variant "${dimension}" "${compiler}" debug mpich
-  done
-done
-
-expected_variants=(
-  2d-g++
-  2d-debug-g++
-  2d-clang++
-  2d-debug-clang++
-  3d-g++
-  3d-debug-g++
-  3d-clang++
-  3d-debug-clang++
+(
+  cd "${ALAMO_SOURCE_DIR}"
+  ./configure "${configure_args[@]}"
+  make -j"${BUILD_JOBS}" amrex
 )
-for variant in "${expected_variants[@]}"; do
-  test -f "${install_root}/${variant}/include/AMReX_Config.H"
-  test -f "${install_root}/${variant}/lib/libamrex.a"
-done
 
-echo "Validated prebuilt AMReX variants:"
-cat "${install_root}/manifest.txt"
+amrex_target="$(
+  make -C "${ALAMO_SOURCE_DIR}" --no-print-directory -s print-amrex-target
+)"
+amrex_source_prefix="${ALAMO_SOURCE_DIR}/${amrex_target}"
+test -f "${amrex_source_prefix}/include/AMReX_Config.H"
+test -f "${amrex_source_prefix}/lib/libamrex.a"
+mkdir -p "${AMREX_INSTALL_ROOT}"
+cp -a "${amrex_source_prefix}" "${prefix}"
+test -f "${prefix}/include/AMReX_Config.H"
+test -f "${prefix}/lib/libamrex.a"
+git -C "${ALAMO_SOURCE_DIR}/ext/AMReX-Codes/amrex" rev-parse HEAD \
+  > "${prefix}/amrex-commit.txt"
+printf '%s mpi=%s\n' "${suffix}" "${selected_mpi}" > "${prefix}/variant.txt"
 
-select_mpi "${release_mpi}"
-rm -rf "${source_dir}"
+printf 'Built AMReX variant %s with %s\n' "${suffix}" "${selected_mpi}"

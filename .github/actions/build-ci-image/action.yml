@@ -55,8 +55,9 @@ runs:
         build-args: |
           UBUNTU_VERSION=${{ inputs.ubuntu-version }}
           AMREX_VERSION=${{ steps.version.outputs.value }}
+          BUILD_JOBS=1
         tags: |
           ${{ inputs.registry }}/${{ inputs.image }}:ubuntu-${{ inputs.ubuntu-version }}
           ${{ inputs.registry }}/${{ inputs.image }}:ubuntu-${{ inputs.ubuntu-version }}-amrex-${{ steps.version.outputs.value }}
         cache-from: type=gha,scope=ubuntu-${{ inputs.ubuntu-version }}
-        cache-to: type=gha,mode=min,scope=ubuntu-${{ inputs.ubuntu-version }}
+        cache-to: type=gha,mode=max,scope=ubuntu-${{ inputs.ubuntu-version }}

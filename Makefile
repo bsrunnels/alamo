@@ -88,6 +88,13 @@ CTR_EXE = 0
 default: $(DEP) $(EXE)
 	@printf "$(B_ON)$(FG_GREEN)DONE $(RESET)\n" 
 
+.PHONY: amrex print-amrex-target
+
+amrex: ${AMREX_TARGET}
+
+print-amrex-target:
+	@printf '%s\n' "$(AMREX_TARGET)"
+
 tidy:
 	@printf "$(B_ON)$(FG_RED)TIDYING  $(RESET)\n" 
 	find src -name "*.orig" -exec rm -rf {} \;
@@ -257,7 +264,11 @@ ifneq ($(MAKECMDGOALS),realclean)
 ifneq ($(MAKECMDGOALS),info)
 ifneq ($(MAKECMDGOALS),help)
 ifneq ($(MAKECMDGOALS),docs)
+ifneq ($(MAKECMDGOALS),amrex)
+ifneq ($(MAKECMDGOALS),print-amrex-target)
 -include $(DEP)
+endif
+endif
 endif
 endif
 endif

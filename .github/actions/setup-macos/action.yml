@@ -28,7 +28,7 @@ runs:
       uses: actions/cache@v4
       with:
         path: .cache/alamo-ci/macos/amrex
-        key: alamo-macos-${{ runner.arch }}-${{ steps.identity.outputs.toolchain }}-amrex-${{ steps.identity.outputs.amrex-version }}-${{ hashFiles('.github/environments/macos/build-amrex.sh') }}
+        key: alamo-macos-${{ runner.arch }}-${{ steps.identity.outputs.toolchain }}-amrex-${{ steps.identity.outputs.amrex-version }}-${{ hashFiles('.github/environments/macos/build-amrex.sh', 'configure', 'Makefile') }}
 
     - name: Build native AMReX environment
       if: steps.cache.outputs.cache-hit != 'true'

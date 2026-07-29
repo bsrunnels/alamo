@@ -330,8 +330,11 @@ if args.buildamrex and not args.amrex:
     
     if args.fft: amrex_configure += " --enable-fft=yes"
 
-    message("AMReX-Configure",amrex_configure,False)
-    subprocess.Popen(amrex_configure.split(),cwd=f"ext/{args.amrexfork}/amrex")
+    shellmessage(
+        "AMReX-Configure",
+        amrex_configure,
+        cwd=f"ext/{args.amrexfork}/amrex",
+    )
     
     f2.write(f"ext/{args.amrexfork}/amrex/"+postfix_amrex+": ${AMREX_SRC}\n")
     f2.write(f"\t$(MAKE) -C ext/{args.amrexfork}/amrex $(MAKECMD)\n") # --output-sync=target

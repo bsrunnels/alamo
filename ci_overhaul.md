@@ -119,10 +119,18 @@ matrix check names.
 The Ubuntu 22.04 and 24.04 images each contain all supported AMReX variants
 (2D/3D, GCC/Clang, release/debug). FFT and OpenMP are excluded for now.
 The AMReX version is taken from ``amrex_current_version`` in ``configure``.
+Each variant is built in an independent BuildKit stage so the builds can run
+in parallel, then the install prefixes are assembled into the final image.
+Alamo's ``./configure`` remains the source of truth for downloading,
+configuring, and installing each AMReX variant; CI invokes the generated
+``make amrex`` target rather than duplicating AMReX configuration flags.
+The shared download stage depends only on those configuration inputs, so
+ordinary Alamo source changes do not invalidate the AMReX image cache.
 
 GitHub does not support container jobs on macOS runners. The equivalent native
 macOS environment uses a toolchain-keyed Actions cache containing 2D/3D
-release/debug Clang AMReX builds. Development and master PRs run both
+release/debug Clang AMReX builds, which are also built in parallel from
+isolated source trees. Development and master PRs run both
 dimensions against that environment while retaining a separate clean-runner
 test of the published macOS installation script.
 
