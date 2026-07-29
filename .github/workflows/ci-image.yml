@@ -9,20 +9,12 @@ permissions:
 
 jobs:
   build:
-    name: Ubuntu ${{ matrix.ubuntu }}
-    runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        ubuntu: ["22.04", "24.04"]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: ./.github/actions/build-ci-image
-        with:
-          ubuntu-version: ${{ matrix.ubuntu }}
-          image: ${{ github.repository_owner }}/alamo-ci
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+    name: Ubuntu CI images
+    uses: ./.github/workflows/build-ci-images.yml
+    with:
+      image: ${{ github.repository_owner }}/alamo-ci
+    secrets:
+      registry_token: ${{ secrets.GITHUB_TOKEN }}
 
   macos:
     name: macOS native environment

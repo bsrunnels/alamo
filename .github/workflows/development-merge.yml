@@ -36,11 +36,12 @@ jobs:
             macos_changed=true
           else
             if git diff --quiet "${before}" "${{ github.sha }}" -- \
-                .github/actions/build-ci-image \
                 .github/containers \
+                .github/workflows/build-ci-images.yml \
                 .github/workflows/dependencies-ubuntu-22.04.sh \
                 .github/workflows/dependencies-ubuntu-24.04.sh \
-                configure; then
+                configure \
+                Makefile; then
               linux_changed=false
             else
               linux_changed=true
@@ -48,7 +49,8 @@ jobs:
             if git diff --quiet "${before}" "${{ github.sha }}" -- \
                 .github/actions/setup-macos \
                 .github/environments/macos \
-                configure; then
+                configure \
+                Makefile; then
               macos_changed=false
             else
               macos_changed=true
@@ -58,23 +60,14 @@ jobs:
           echo "macos-changed=${macos_changed}" >> "${GITHUB_OUTPUT}"
 
   build-images:
-    name: Refresh Ubuntu ${{ matrix.ubuntu }} image
+    name: Refresh Ubuntu images
     needs: detect-image-changes
-    runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        ubuntu: ["22.04", "24.04"]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build and publish
-        if: needs.detect-image-changes.outputs.linux-changed == 'true'
-        uses: ./.github/actions/build-ci-image
-        with:
-          ubuntu-version: ${{ matrix.ubuntu }}
-          image: ${{ github.repository_owner }}/alamo-ci
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+    uses: ./.github/workflows/build-ci-images.yml
+    with:
+      enabled: ${{ needs.detect-image-changes.outputs.linux-changed == 'true' }}
+      image: ${{ github.repository_owner }}/alamo-ci
+    secrets:
+      registry_token: ${{ secrets.GITHUB_TOKEN }}
 
   refresh-macos-environment:
     name: Refresh macOS environment

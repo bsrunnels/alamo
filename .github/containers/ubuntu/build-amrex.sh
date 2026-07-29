@@ -10,6 +10,10 @@ set -eu -o pipefail
 : "${ALAMO_SOURCE_DIR:=/tmp/alamo}"
 : "${AMREX_INSTALL_ROOT:=/opt/amrex}"
 
+git config --global --add safe.directory "${ALAMO_SOURCE_DIR}"
+git config --global --add safe.directory \
+  "${ALAMO_SOURCE_DIR}/ext/AMReX-Codes/amrex"
+
 case "${DIMENSION}" in
   2|3)
     ;;

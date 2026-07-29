@@ -1,0 +1,27 @@
+ARG UBUNTU_VERSION=24.04
+FROM ubuntu:${UBUNTU_VERSION}
+
+ARG UBUNTU_VERSION
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+       ca-certificates git python-is-python3 python3-pip python3-venv sudo \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY .github/workflows/dependencies-ubuntu-22.04.sh /tmp/alamo-ci/
+COPY .github/workflows/dependencies-ubuntu-24.04.sh /tmp/alamo-ci/
+
+RUN bash "/tmp/alamo-ci/dependencies-ubuntu-${UBUNTU_VERSION}.sh" \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends \
+       libmpich-dev libmpich12 mpich \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN git clone --depth 1 https://github.com/brendangregg/FlameGraph.git /opt/FlameGraph
+
+ENV OMPI_ALLOW_RUN_AS_ROOT=1
+ENV OMPI_ALLOW_RUN_AS_ROOT_CONFIRM=1
+
+WORKDIR /workspace

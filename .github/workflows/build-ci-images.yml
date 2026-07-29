@@ -1,0 +1,305 @@
+name: Build reusable CI images
+
+on:
+  workflow_call:
+    inputs:
+      enabled:
+        description: Build images instead of retaining the currently published images
+        required: false
+        type: boolean
+        default: true
+      registry:
+        required: false
+        type: string
+        default: ghcr.io
+      image:
+        description: Image name without registry or tag
+        required: true
+        type: string
+      push:
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      registry_token:
+        required: true
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  DOCKER_BUILD_RECORD_UPLOAD: "false"
+
+jobs:
+  prepare:
+    name: Resolve environment version
+    runs-on: ubuntu-24.04
+    outputs:
+      amrex-version: ${{ steps.version.outputs.value }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Resolve supported AMReX version
+        id: version
+        shell: bash
+        run: |
+          set -eu -o pipefail
+          version="$(python3 -c 'import pathlib, re; text = pathlib.Path("configure").read_text(); print(re.search(r"^amrex_current_version = \"([^\"]+)\"", text, re.MULTILINE).group(1))')"
+          echo "value=${version}" >> "${GITHUB_OUTPUT}"
+
+  install:
+    name: Install / Ubuntu ${{ matrix.ubuntu }}
+    if: inputs.enabled
+    needs: prepare
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        ubuntu: ["22.04", "24.04"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare artifact directory
+        shell: bash
+        run: mkdir -p "${RUNNER_TEMP}/base"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build dependency image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: .github/containers/ubuntu/Dockerfile.base
+          build-args: |
+            UBUNTU_VERSION=${{ matrix.ubuntu }}
+          tags: alamo-ci-base:ubuntu-${{ matrix.ubuntu }}
+          outputs: type=docker,dest=${{ runner.temp }}/base/alamo-ci-base.tar
+          cache-from: type=gha,scope=ubuntu-base-${{ matrix.ubuntu }}
+          cache-to: type=gha,mode=max,scope=ubuntu-base-${{ matrix.ubuntu }}
+
+      - name: Upload dependency image
+        uses: actions/upload-artifact@v4
+        with:
+          name: alamo-ci-base-ubuntu-${{ matrix.ubuntu }}
+          path: ${{ runner.temp }}/base/alamo-ci-base.tar
+          if-no-files-found: error
+          compression-level: 1
+          retention-days: 1
+
+  amrex-source:
+    name: Download AMReX source
+    if: inputs.enabled
+    needs: [prepare, install]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Ubuntu 24.04 installation
+        uses: actions/download-artifact@v4
+        with:
+          name: alamo-ci-base-ubuntu-24.04
+          path: ${{ runner.temp }}/base
+
+      - name: Load installation image
+        shell: bash
+        run: docker load --input "${RUNNER_TEMP}/base/alamo-ci-base.tar"
+
+      - name: Download and prepare AMReX
+        shell: bash
+        run: |
+          set -eu -o pipefail
+          mkdir -p "${RUNNER_TEMP}/source"
+          docker run --rm \
+            --env "AMREX_VERSION=${{ needs.prepare.outputs.amrex-version }}" \
+            --env AMREX_ARCHIVE=/output/amrex-source.tar.gz \
+            --volume "${GITHUB_WORKSPACE}:/workspace:ro" \
+            --volume "${RUNNER_TEMP}/source:/output" \
+            alamo-ci-base:ubuntu-24.04 \
+            bash /workspace/.github/containers/ubuntu/prepare-amrex-source.sh
+
+      - name: Upload AMReX source
+        uses: actions/upload-artifact@v4
+        with:
+          name: amrex-source-${{ needs.prepare.outputs.amrex-version }}
+          path: ${{ runner.temp }}/source/amrex-source.tar.gz
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
+
+  amrex:
+    name: AMReX / Ubuntu ${{ matrix.ubuntu }} / ${{ matrix.dimension }}D / ${{ matrix.compiler }} / ${{ matrix.mode }}
+    if: inputs.enabled
+    needs: [prepare, install, amrex-source]
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        ubuntu: ["22.04", "24.04"]
+        dimension: ["2", "3"]
+        compiler: [GCC, Clang]
+        mode: [release, debug]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download installation image
+        uses: actions/download-artifact@v4
+        with:
+          name: alamo-ci-base-ubuntu-${{ matrix.ubuntu }}
+          path: ${{ runner.temp }}/base
+
+      - name: Download AMReX source
+        uses: actions/download-artifact@v4
+        with:
+          name: amrex-source-${{ needs.prepare.outputs.amrex-version }}
+          path: ${{ runner.temp }}/source
+
+      - name: Load installation image
+        shell: bash
+        run: docker load --input "${RUNNER_TEMP}/base/alamo-ci-base.tar"
+
+      - name: Build AMReX variant
+        shell: bash
+        env:
+          COMPILER_NAME: ${{ matrix.compiler }}
+        run: |
+          set -eu -o pipefail
+          case "${COMPILER_NAME}" in
+            GCC)
+              compiler=g++
+              ;;
+            Clang)
+              compiler=clang++
+              ;;
+            *)
+              echo "Unknown compiler: ${COMPILER_NAME}" >&2
+              exit 2
+              ;;
+          esac
+          BASE_IMAGE="alamo-ci-base:ubuntu-${{ matrix.ubuntu }}" \
+          AMREX_SOURCE_ARCHIVE="${RUNNER_TEMP}/source/amrex-source.tar.gz" \
+          ARTIFACT_DIR="${RUNNER_TEMP}/variant" \
+          AMREX_VERSION="${{ needs.prepare.outputs.amrex-version }}" \
+          DIMENSION="${{ matrix.dimension }}" \
+          COMPILER="${compiler}" \
+          MODE="${{ matrix.mode }}" \
+          BUILD_JOBS=2 \
+          bash .github/containers/ubuntu/build-amrex-artifact.sh
+
+      - name: Upload AMReX variant
+        uses: actions/upload-artifact@v4
+        with:
+          name: amrex-ubuntu-${{ matrix.ubuntu }}-${{ matrix.dimension }}d-${{ matrix.compiler }}-${{ matrix.mode }}
+          path: ${{ runner.temp }}/variant/*.tar.gz
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 1
+
+  assemble:
+    name: Assemble / Ubuntu ${{ matrix.ubuntu }}
+    if: inputs.enabled
+    needs: [prepare, install, amrex]
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        ubuntu: ["22.04", "24.04"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download installation image
+        uses: actions/download-artifact@v4
+        with:
+          name: alamo-ci-base-ubuntu-${{ matrix.ubuntu }}
+          path: ${{ runner.temp }}/base
+
+      - name: Download AMReX variants
+        uses: actions/download-artifact@v4
+        with:
+          pattern: amrex-ubuntu-${{ matrix.ubuntu }}-*
+          path: ${{ runner.temp }}/variants
+          merge-multiple: true
+
+      - name: Merge and validate AMReX installations
+        shell: bash
+        run: |
+          set -eu -o pipefail
+          mkdir -p .ci-artifacts/amrex
+          shopt -s nullglob
+          archives=("${RUNNER_TEMP}"/variants/*.tar.gz)
+          if [ "${#archives[@]}" -ne 8 ]; then
+            echo "Expected 8 AMReX artifacts, found ${#archives[@]}" >&2
+            exit 1
+          fi
+          for archive in "${archives[@]}"; do
+            tar -xzf "${archive}" -C .ci-artifacts/amrex
+          done
+          AMREX_VERSION="${{ needs.prepare.outputs.amrex-version }}" \
+          AMREX_INSTALL_ROOT="${GITHUB_WORKSPACE}/.ci-artifacts/amrex" \
+            bash .github/containers/ubuntu/validate-amrex.sh
+
+      - name: Load installation image
+        shell: bash
+        run: docker load --input "${RUNNER_TEMP}/base/alamo-ci-base.tar"
+
+      - name: Log in to container registry
+        if: inputs.push
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ inputs.registry }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.registry_token }}
+
+      - name: Build and publish assembled image
+        shell: bash
+        env:
+          AMREX_VERSION: ${{ needs.prepare.outputs.amrex-version }}
+          BASE_IMAGE: alamo-ci-base:ubuntu-${{ matrix.ubuntu }}
+          IMAGE: ${{ inputs.registry }}/${{ inputs.image }}
+          PUSH_IMAGE: ${{ inputs.push }}
+          UBUNTU_VERSION: ${{ matrix.ubuntu }}
+        run: |
+          set -eu -o pipefail
+          stable_tag="${IMAGE}:ubuntu-${UBUNTU_VERSION}"
+          version_tag="${IMAGE}:ubuntu-${UBUNTU_VERSION}-amrex-${AMREX_VERSION}"
+          docker build \
+            --file .github/containers/ubuntu/Dockerfile \
+            --build-arg "BASE_IMAGE=${BASE_IMAGE}" \
+            --build-arg "AMREX_VERSION=${AMREX_VERSION}" \
+            --tag "${stable_tag}" \
+            --tag "${version_tag}" \
+            .
+          if [ "${PUSH_IMAGE}" = true ]; then
+            docker push "${stable_tag}"
+            docker push "${version_tag}"
+          fi
+
+  complete:
+    name: CI image build complete
+    if: always()
+    needs: [prepare, install, amrex-source, amrex, assemble]
+    runs-on: ubuntu-24.04
+    env:
+      ENABLED: ${{ inputs.enabled }}
+      PREPARE_RESULT: ${{ needs.prepare.result }}
+      INSTALL_RESULT: ${{ needs.install.result }}
+      SOURCE_RESULT: ${{ needs.amrex-source.result }}
+      AMREX_RESULT: ${{ needs.amrex.result }}
+      ASSEMBLE_RESULT: ${{ needs.assemble.result }}
+    steps:
+      - name: Check environment build
+        shell: bash
+        run: |
+          set -eu -o pipefail
+          test "${PREPARE_RESULT}" = success
+          if [ "${ENABLED}" != true ]; then
+            echo "No CI environment inputs changed"
+            exit 0
+          fi
+          for result in \
+              "${INSTALL_RESULT}" \
+              "${SOURCE_RESULT}" \
+              "${AMREX_RESULT}" \
+              "${ASSEMBLE_RESULT}"; do
+            test "${result}" = success
+          done
