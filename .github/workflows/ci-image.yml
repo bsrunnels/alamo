@@ -1,15 +1,71 @@
 name: Build CI environments
 
 on:
+  push:
+    branches: [development, master]
   workflow_dispatch:
 
 permissions:
   contents: read
   packages: write
 
+concurrency:
+  group: ci-environments-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
+  detect:
+    name: Detect environment changes
+    runs-on: ubuntu-24.04
+    outputs:
+      linux-changed: ${{ steps.changes.outputs.linux-changed }}
+      macos-changed: ${{ steps.changes.outputs.macos-changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Compare environment inputs
+        id: changes
+        shell: bash
+        env:
+          BEFORE: ${{ github.event.before }}
+          CURRENT: ${{ github.sha }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          set -eu -o pipefail
+          if [ "${EVENT_NAME}" = workflow_dispatch ] ||
+              [ "${BEFORE}" = "0000000000000000000000000000000000000000" ]; then
+            linux_changed=true
+            macos_changed=true
+          else
+            if git diff --quiet "${BEFORE}" "${CURRENT}" -- \
+                .github/containers \
+                .github/workflows/build-ci-images.yml \
+                .github/workflows/dependencies-ubuntu-22.04.sh \
+                .github/workflows/dependencies-ubuntu-24.04.sh \
+                configure \
+                Makefile; then
+              linux_changed=false
+            else
+              linux_changed=true
+            fi
+            if git diff --quiet "${BEFORE}" "${CURRENT}" -- \
+                .github/actions/setup-macos \
+                .github/environments/macos \
+                configure \
+                Makefile; then
+              macos_changed=false
+            else
+              macos_changed=true
+            fi
+          fi
+          echo "linux-changed=${linux_changed}" >> "${GITHUB_OUTPUT}"
+          echo "macos-changed=${macos_changed}" >> "${GITHUB_OUTPUT}"
+
   build:
-    name: Ubuntu CI images
+    name: Refresh Ubuntu images
+    if: needs.detect.outputs.linux-changed == 'true'
+    needs: detect
     uses: ./.github/workflows/build-ci-images.yml
     with:
       image: ${{ github.repository_owner }}/alamo-ci
@@ -17,7 +73,9 @@ jobs:
       registry_token: ${{ secrets.GITHUB_TOKEN }}
 
   macos:
-    name: macOS native environment
+    name: Refresh macOS environment
+    if: needs.detect.outputs.macos-changed == 'true'
+    needs: detect
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4

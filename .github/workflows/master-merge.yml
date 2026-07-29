@@ -1,12 +1,14 @@
 name: Master merge
 
 on:
-  push:
+  workflow_run:
+    workflows: [Build CI environments]
+    types: [completed]
     branches: [master]
 
 permissions:
   contents: read
-  packages: write
+  packages: read
   pages: write
   id-token: write
 
@@ -15,73 +17,21 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  detect-image-changes:
-    name: Detect CI environment changes
+  environment-ready:
+    name: Use prepared CI environments
+    if: >-
+      ${{
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push'
+      }}
     runs-on: ubuntu-24.04
-    outputs:
-      linux-changed: ${{ steps.changes.outputs.linux-changed }}
-      macos-changed: ${{ steps.changes.outputs.macos-changed }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Compare image inputs
-        id: changes
-        shell: bash
-        run: |
-          set -eu -o pipefail
-          before="${{ github.event.before }}"
-          if [ "${before}" = "0000000000000000000000000000000000000000" ]; then
-            linux_changed=true
-            macos_changed=true
-          else
-            if git diff --quiet "${before}" "${{ github.sha }}" -- \
-                .github/containers \
-                .github/workflows/build-ci-images.yml \
-                .github/workflows/dependencies-ubuntu-22.04.sh \
-                .github/workflows/dependencies-ubuntu-24.04.sh \
-                configure \
-                Makefile; then
-              linux_changed=false
-            else
-              linux_changed=true
-            fi
-            if git diff --quiet "${before}" "${{ github.sha }}" -- \
-                .github/actions/setup-macos \
-                .github/environments/macos \
-                configure \
-                Makefile; then
-              macos_changed=false
-            else
-              macos_changed=true
-            fi
-          fi
-          echo "linux-changed=${linux_changed}" >> "${GITHUB_OUTPUT}"
-          echo "macos-changed=${macos_changed}" >> "${GITHUB_OUTPUT}"
-
-  build-images:
-    name: Refresh Ubuntu images
-    needs: detect-image-changes
-    uses: ./.github/workflows/build-ci-images.yml
-    with:
-      enabled: ${{ needs.detect-image-changes.outputs.linux-changed == 'true' }}
-      image: ${{ github.repository_owner }}/alamo-ci
-    secrets:
-      registry_token: ${{ secrets.GITHUB_TOKEN }}
-
-  refresh-macos-environment:
-    name: Refresh macOS environment
-    needs: detect-image-changes
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Build and cache
-        if: needs.detect-image-changes.outputs.macos-changed == 'true'
-        uses: ./.github/actions/setup-macos
+      - name: Record prepared revision
+        run: echo "Using CI environments prepared for ${{ github.event.workflow_run.head_sha }}"
 
   documentation:
     name: Build release documentation
-    needs: build-images
+    needs: environment-ready
     runs-on: ubuntu-24.04
     container:
       image: ghcr.io/${{ github.repository_owner }}/alamo-ci:ubuntu-24.04
@@ -90,6 +40,8 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
       - uses: ./.github/actions/build-docs
       - uses: actions/upload-artifact@v4
         with:
@@ -98,7 +50,7 @@ jobs:
 
   coverage:
     name: Release coverage
-    needs: build-images
+    needs: environment-ready
     runs-on: ubuntu-24.04
     container:
       image: ghcr.io/${{ github.repository_owner }}/alamo-ci:ubuntu-24.04
@@ -107,6 +59,8 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
       - uses: ./.github/actions/coverage
       - uses: actions/upload-artifact@v4
         with:
@@ -115,7 +69,7 @@ jobs:
 
   flamegraphs:
     name: Release flame graphs / 2D Clang
-    needs: build-images
+    needs: environment-ready
     runs-on: ubuntu-24.04
     container:
       image: ghcr.io/${{ github.repository_owner }}/alamo-ci:ubuntu-24.04
@@ -124,6 +78,8 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
       - uses: ./.github/actions/regression
         with:
           dimension: "2"
@@ -151,6 +107,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
       - uses: actions/download-artifact@v4
         with:
           name: documentation

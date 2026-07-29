@@ -101,14 +101,22 @@ Top-level workflows are organized by repository event:
 - ``branch.yml``: fast checks and a representative 2D GCC regression run
 - ``development-pr.yml``: Linux regression matrix, install tests, Python,
   macOS, documentation, coverage, flame graphs, and PR documentation
-- ``development-merge.yml``: image refresh, performance, coverage, and
+- ``development-merge.yml``: post-environment performance, coverage, and
   publication of ``/docs/development/``
 - ``master-pr.yml``: comprehensive release-candidate testing, including
   sanitizers and performance
-- ``master-merge.yml``: image refresh and publication of
+- ``master-merge.yml``: post-environment publication of
   ``/docs/master/``
 - ``master-monthly.yml``: comprehensive scheduled monitoring
-- ``ci-image.yml``: manual bootstrap of the CI environments
+- ``ci-image.yml``: CI environment preflight for every push to ``development``
+  or ``master``, plus a manual full-refresh entry point
+
+The environment preflight compares the pushed revision with its predecessor.
+Unchanged Linux and macOS environments are skipped, making the normal path a
+single inexpensive detection job. If an input changed, the affected
+environment is rebuilt and published before post-merge work begins. The
+development and master merge workflows are triggered only after this preflight
+completes successfully and explicitly check out its originating commit.
 
 The PR workflows end in stable ``Development required checks`` and
 ``Master required checks`` jobs. These are the check names configured in the
@@ -122,7 +130,9 @@ The AMReX version is taken from ``amrex_current_version`` in ``configure``.
 The dependency installations are built first and passed between jobs as image
 artifacts. Each AMReX variant then has its own named Actions matrix job and
 installation artifact. An assembly job merges the eight prefixes for each
-Ubuntu release before building and publishing the final image.
+Ubuntu release before building and publishing the final image. Matrix jobs and
+artifacts use Alamo's installation prefixes directly, for example ``2d-g++``
+and ``3d-debug-clang++``.
 Alamo's ``./configure`` remains the source of truth for downloading,
 configuring, and installing each AMReX variant; CI invokes the generated
 ``make amrex`` target rather than duplicating AMReX configuration flags.

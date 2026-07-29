@@ -3,11 +3,6 @@ name: Build reusable CI images
 on:
   workflow_call:
     inputs:
-      enabled:
-        description: Build images instead of retaining the currently published images
-        required: false
-        type: boolean
-        default: true
       registry:
         required: false
         type: string
@@ -49,7 +44,6 @@ jobs:
 
   install:
     name: Install / Ubuntu ${{ matrix.ubuntu }}
-    if: inputs.enabled
     needs: prepare
     runs-on: ubuntu-24.04
     strategy:
@@ -89,7 +83,6 @@ jobs:
 
   amrex-source:
     name: Download AMReX source
-    if: inputs.enabled
     needs: [prepare, install]
     runs-on: ubuntu-24.04
     steps:
@@ -128,17 +121,55 @@ jobs:
           retention-days: 1
 
   amrex:
-    name: AMReX / Ubuntu ${{ matrix.ubuntu }} / ${{ matrix.dimension }}D / ${{ matrix.compiler }} / ${{ matrix.mode }}
-    if: inputs.enabled
+    name: AMReX / Ubuntu ${{ matrix.ubuntu }} / ${{ matrix.prefix }}
     needs: [prepare, install, amrex-source]
     runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         ubuntu: ["22.04", "24.04"]
-        dimension: ["2", "3"]
-        compiler: [GCC, Clang]
-        mode: [release, debug]
+        prefix:
+          - 2d-g++
+          - 2d-debug-g++
+          - 2d-clang++
+          - 2d-debug-clang++
+          - 3d-g++
+          - 3d-debug-g++
+          - 3d-clang++
+          - 3d-debug-clang++
+        include:
+          - prefix: 2d-g++
+            dimension: "2"
+            compiler: g++
+            mode: release
+          - prefix: 2d-debug-g++
+            dimension: "2"
+            compiler: g++
+            mode: debug
+          - prefix: 2d-clang++
+            dimension: "2"
+            compiler: clang++
+            mode: release
+          - prefix: 2d-debug-clang++
+            dimension: "2"
+            compiler: clang++
+            mode: debug
+          - prefix: 3d-g++
+            dimension: "3"
+            compiler: g++
+            mode: release
+          - prefix: 3d-debug-g++
+            dimension: "3"
+            compiler: g++
+            mode: debug
+          - prefix: 3d-clang++
+            dimension: "3"
+            compiler: clang++
+            mode: release
+          - prefix: 3d-debug-clang++
+            dimension: "3"
+            compiler: clang++
+            mode: debug
     steps:
       - uses: actions/checkout@v4
 
@@ -158,30 +189,16 @@ jobs:
         shell: bash
         run: docker load --input "${RUNNER_TEMP}/base/alamo-ci-base.tar"
 
-      - name: Build AMReX variant
+      - name: Build ${{ matrix.prefix }}
         shell: bash
-        env:
-          COMPILER_NAME: ${{ matrix.compiler }}
         run: |
           set -eu -o pipefail
-          case "${COMPILER_NAME}" in
-            GCC)
-              compiler=g++
-              ;;
-            Clang)
-              compiler=clang++
-              ;;
-            *)
-              echo "Unknown compiler: ${COMPILER_NAME}" >&2
-              exit 2
-              ;;
-          esac
           BASE_IMAGE="alamo-ci-base:ubuntu-${{ matrix.ubuntu }}" \
           AMREX_SOURCE_ARCHIVE="${RUNNER_TEMP}/source/amrex-source.tar.gz" \
           ARTIFACT_DIR="${RUNNER_TEMP}/variant" \
           AMREX_VERSION="${{ needs.prepare.outputs.amrex-version }}" \
           DIMENSION="${{ matrix.dimension }}" \
-          COMPILER="${compiler}" \
+          COMPILER="${{ matrix.compiler }}" \
           MODE="${{ matrix.mode }}" \
           BUILD_JOBS=2 \
           bash .github/containers/ubuntu/build-amrex-artifact.sh
@@ -189,7 +206,7 @@ jobs:
       - name: Upload AMReX variant
         uses: actions/upload-artifact@v4
         with:
-          name: amrex-ubuntu-${{ matrix.ubuntu }}-${{ matrix.dimension }}d-${{ matrix.compiler }}-${{ matrix.mode }}
+          name: amrex-ubuntu-${{ matrix.ubuntu }}-${{ matrix.prefix }}
           path: ${{ runner.temp }}/variant/*.tar.gz
           if-no-files-found: error
           compression-level: 0
@@ -197,7 +214,6 @@ jobs:
 
   assemble:
     name: Assemble / Ubuntu ${{ matrix.ubuntu }}
-    if: inputs.enabled
     needs: [prepare, install, amrex]
     runs-on: ubuntu-24.04
     strategy:
@@ -280,7 +296,6 @@ jobs:
     needs: [prepare, install, amrex-source, amrex, assemble]
     runs-on: ubuntu-24.04
     env:
-      ENABLED: ${{ inputs.enabled }}
       PREPARE_RESULT: ${{ needs.prepare.result }}
       INSTALL_RESULT: ${{ needs.install.result }}
       SOURCE_RESULT: ${{ needs.amrex-source.result }}
@@ -292,10 +307,6 @@ jobs:
         run: |
           set -eu -o pipefail
           test "${PREPARE_RESULT}" = success
-          if [ "${ENABLED}" != true ]; then
-            echo "No CI environment inputs changed"
-            exit 0
-          fi
           for result in \
               "${INSTALL_RESULT}" \
               "${SOURCE_RESULT}" \
