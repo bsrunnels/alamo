@@ -115,8 +115,10 @@ The environment preflight compares the pushed revision with its predecessor.
 Unchanged Linux and macOS environments are skipped, making the normal path a
 single inexpensive detection job. If an input changed, the affected
 environment is rebuilt and published before post-merge work begins. The
-development and master merge workflows are triggered only after this preflight
-completes successfully and explicitly check out its originating commit.
+development and master merge workflows become visible as soon as this
+preflight starts. Their first job waits for the exact environment workflow run
+to complete successfully, leaving the remaining jobs visibly pending behind
+it. Post-merge jobs explicitly check out the preflight's originating commit.
 
 The PR workflows end in stable ``Development required checks`` and
 ``Master required checks`` jobs. These are the check names configured in the

@@ -3,10 +3,11 @@ name: Development merge
 on:
   workflow_run:
     workflows: [Build CI environments]
-    types: [completed]
+    types: [in_progress]
     branches: [development]
 
 permissions:
+  actions: read
   contents: read
   packages: read
   pages: write
@@ -18,16 +19,39 @@ concurrency:
 
 jobs:
   environment-ready:
-    name: Use prepared CI environments
-    if: >-
-      ${{
-        github.event.workflow_run.conclusion == 'success' &&
-        github.event.workflow_run.event == 'push'
-      }}
+    name: Wait for CI environments
+    if: github.event.workflow_run.event == 'push'
     runs-on: ubuntu-24.04
+    timeout-minutes: 360
     steps:
-      - name: Record prepared revision
-        run: echo "Using CI environments prepared for ${{ github.event.workflow_run.head_sha }}"
+      - name: Wait for environment preparation
+        uses: actions/github-script@v8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const runId = Number('${{ github.event.workflow_run.id }}');
+            let previousState = '';
+            while (true) {
+              const response = await github.rest.actions.getWorkflowRun({
+                ...context.repo,
+                run_id: runId,
+              });
+              const run = response.data;
+              const state = `${run.status}/${run.conclusion ?? '-'}`;
+              if (state !== previousState) {
+                core.info(`Build CI environments: ${state}`);
+                previousState = state;
+              }
+              if (run.status === 'completed') {
+                if (run.conclusion !== 'success') {
+                  core.setFailed(
+                    `Build CI environments completed with ${run.conclusion}`
+                  );
+                }
+                break;
+              }
+              await new Promise(resolve => setTimeout(resolve, 15000));
+            }
 
   documentation:
     name: Build development documentation
