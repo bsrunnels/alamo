@@ -3,7 +3,7 @@ name: Master merge
 on:
   workflow_run:
     workflows: [Build CI environments]
-    types: [in_progress]
+    types: [requested]
     branches: [master]
 
 permissions:
