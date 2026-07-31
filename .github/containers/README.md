@@ -11,14 +11,17 @@ AMReX variants for that release live together:
 
 FFT and OpenMP variants are intentionally excluded.
 
-The `Build CI images` workflow bootstraps both images manually. Merges to
-`development` and `master` rebuild them automatically when the Docker
-definition, dependency scripts, image action, or `configure` changes.
+The `Build CI environments` workflow bootstraps both images manually. Pushes
+to `development` and `master` compute a content fingerprint from the Docker
+definition, dependency scripts, image workflow, AMReX build helpers,
+`configure`, and `Makefile`. A missing fingerprint is built; an existing one
+is promoted to the normal platform tag without rebuilding. In particular, a
+master merge can reuse the environment already built on development.
 
 The supported AMReX version is read from `amrex_current_version` in
-`configure`. Builds publish both a stable platform tag such as
-`ubuntu-24.04` and an inspectable version tag such as
-`ubuntu-24.04-amrex-26.06`.
+`configure`. Builds publish a moving platform tag such as `ubuntu-24.04`, an
+inspectable version tag such as `ubuntu-24.04-amrex-26.06`, and an immutable
+content tag of the form `ubuntu-24.04-env-<fingerprint>`.
 
 GitHub Actions only supports job containers on Linux runners, so macOS cannot
 use a Docker image without ceasing to test macOS. The native macOS equivalent

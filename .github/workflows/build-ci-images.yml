@@ -11,6 +11,10 @@ on:
         description: Image name without registry or tag
         required: true
         type: string
+      environment-fingerprint:
+        description: Content hash of every Linux CI environment input
+        required: true
+        type: string
       push:
         required: false
         type: boolean
@@ -272,22 +276,27 @@ jobs:
           AMREX_VERSION: ${{ needs.prepare.outputs.amrex-version }}
           BASE_IMAGE: alamo-ci-base:ubuntu-${{ matrix.ubuntu }}
           IMAGE: ${{ inputs.registry }}/${{ inputs.image }}
+          ENVIRONMENT_FINGERPRINT: ${{ inputs.environment-fingerprint }}
           PUSH_IMAGE: ${{ inputs.push }}
           UBUNTU_VERSION: ${{ matrix.ubuntu }}
         run: |
           set -eu -o pipefail
           stable_tag="${IMAGE}:ubuntu-${UBUNTU_VERSION}"
           version_tag="${IMAGE}:ubuntu-${UBUNTU_VERSION}-amrex-${AMREX_VERSION}"
+          fingerprint_tag="${IMAGE}:ubuntu-${UBUNTU_VERSION}-env-${ENVIRONMENT_FINGERPRINT}"
           docker build \
             --file .github/containers/ubuntu/Dockerfile \
             --build-arg "BASE_IMAGE=${BASE_IMAGE}" \
             --build-arg "AMREX_VERSION=${AMREX_VERSION}" \
+            --build-arg "CI_ENVIRONMENT_FINGERPRINT=${ENVIRONMENT_FINGERPRINT}" \
             --tag "${stable_tag}" \
             --tag "${version_tag}" \
+            --tag "${fingerprint_tag}" \
             .
           if [ "${PUSH_IMAGE}" = true ]; then
             docker push "${stable_tag}"
             docker push "${version_tag}"
+            docker push "${fingerprint_tag}"
           fi
 
   complete:

@@ -15,15 +15,37 @@ concurrency:
 
 jobs:
   detect:
-    name: Detect environment changes
+    name: Resolve environment changes
     runs-on: ubuntu-24.04
     outputs:
       linux-changed: ${{ steps.changes.outputs.linux-changed }}
+      linux-fingerprint: ${{ steps.fingerprint.outputs.linux }}
       macos-changed: ${{ steps.changes.outputs.macos-changed }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Fingerprint Linux environment
+        id: fingerprint
+        shell: bash
+        run: |
+          set -eu -o pipefail
+          fingerprint="$(
+            bash .github/containers/ubuntu/environment-fingerprint.sh
+          )"
+          echo "linux=${fingerprint}" >> "${GITHUB_OUTPUT}"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Compare environment inputs
         id: changes
         shell: bash
@@ -31,6 +53,8 @@ jobs:
           BEFORE: ${{ github.event.before }}
           CURRENT: ${{ github.sha }}
           EVENT_NAME: ${{ github.event_name }}
+          IMAGE: ghcr.io/${{ github.repository_owner }}/alamo-ci
+          LINUX_FINGERPRINT: ${{ steps.fingerprint.outputs.linux }}
         run: |
           set -eu -o pipefail
           if [ "${EVENT_NAME}" = workflow_dispatch ] ||
@@ -38,17 +62,25 @@ jobs:
             linux_changed=true
             macos_changed=true
           else
-            if git diff --quiet "${BEFORE}" "${CURRENT}" -- \
-                .github/containers \
-                .github/workflows/build-ci-images.yml \
-                .github/workflows/dependencies-ubuntu-22.04.sh \
-                .github/workflows/dependencies-ubuntu-24.04.sh \
-                configure \
-                Makefile; then
-              linux_changed=false
-            else
-              linux_changed=true
+            linux_changed=false
+            for ubuntu in 22.04 24.04; do
+              fingerprint_tag="${IMAGE}:ubuntu-${ubuntu}-env-${LINUX_FINGERPRINT}"
+              if ! docker buildx imagetools inspect "${fingerprint_tag}" >/dev/null; then
+                linux_changed=true
+              fi
+            done
+
+            if [ "${linux_changed}" = false ]; then
+              for ubuntu in 22.04 24.04; do
+                fingerprint_tag="${IMAGE}:ubuntu-${ubuntu}-env-${LINUX_FINGERPRINT}"
+                stable_tag="${IMAGE}:ubuntu-${ubuntu}"
+                docker buildx imagetools create \
+                  --tag "${stable_tag}" \
+                  "${fingerprint_tag}"
+              done
+              echo "Promoted existing Linux environment ${LINUX_FINGERPRINT}"
             fi
+
             if git diff --quiet "${BEFORE}" "${CURRENT}" -- \
                 .github/actions/setup-macos \
                 .github/environments/macos \
@@ -68,6 +100,7 @@ jobs:
     needs: detect
     uses: ./.github/workflows/build-ci-images.yml
     with:
+      environment-fingerprint: ${{ needs.detect.outputs.linux-fingerprint }}
       image: ${{ github.repository_owner }}/alamo-ci
     secrets:
       registry_token: ${{ secrets.GITHUB_TOKEN }}
