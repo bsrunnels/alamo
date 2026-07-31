@@ -105,26 +105,42 @@ Top-level workflows are organized by repository event:
   publication of ``/docs/development/``
 - ``master-pr.yml``: comprehensive release-candidate testing, including
   sanitizers and performance
-- ``master-merge.yml``: post-environment publication of
-  ``/docs/master/``
+- ``master-merge.yml``: verification and publication of the already validated
+  Master PR outputs beneath ``/docs/master/``
 - ``master-monthly.yml``: comprehensive scheduled monitoring
 - ``ci-image.yml``: CI environment preflight for every push to ``development``
   or ``master``, plus a manual full-refresh entry point
 
-The environment preflight compares the pushed revision with its predecessor.
-Unchanged Linux and macOS environments are skipped, making the normal path a
-single inexpensive detection job. If an input changed, the affected
-environment is rebuilt and published before post-merge work begins. The
-development and master merge workflows become visible as soon as this
-preflight starts. Their first job waits for the exact environment workflow run
-to complete successfully, leaving the remaining jobs visibly pending behind
-it. Post-merge jobs explicitly check out the preflight's originating commit.
+The environment preflight computes a content fingerprint over every tracked
+Linux image input. Images are published under both the normal moving tag and
+an immutable fingerprint tag. If that exact image was already built on
+another branch, the preflight promotes its fingerprint tag instead of
+rebuilding it. This is the normal path when a validated development commit is
+merged into master. macOS retains its path-based change detection. If an
+environment is unavailable or an input changed, the affected environment is
+built and published before post-merge work begins.
+
+The development and master merge workflows become visible as soon as the
+preflight is requested. Their first job waits for the exact environment
+workflow run to complete successfully, leaving the remaining jobs visibly
+pending behind it. Post-merge jobs explicitly check out the preflight's
+originating commit.
 
 The PR workflows end in stable ``Development required checks`` and
 ``Master required checks`` jobs. These are the check names configured in the
 corresponding protected-branch rules. Each gate aggregates the matrix and
 platform jobs so branch protection does not depend on dynamically generated
 matrix check names.
+
+A successful same-repository Master PR also ends by collecting its generated
+documentation, coverage, and reports into one immutable promotion artifact.
+The artifact records the PR head, workflow run, and exact Git tree tested by
+the PR merge ref. After the PR is merged, ``master-merge.yml`` locates that
+successful run, downloads the promotion artifact across workflow runs, and
+requires its tested tree to equal the tree now on master. It then publishes
+those outputs without recompiling Alamo or rerunning the release test matrix.
+If master no longer has the tested tree, or the evidence is missing or
+expired, publication fails instead of silently using stale results.
 
 The Ubuntu 22.04 and 24.04 images each contain all supported AMReX variants
 (2D/3D, GCC/Clang, release/debug). FFT and OpenMP are excluded for now.

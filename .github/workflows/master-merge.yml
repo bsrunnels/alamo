@@ -1,9 +1,11 @@
 name: Master merge
 
+run-name: Promote validated Master PR to master
+
 on:
   workflow_run:
     workflows: [Build CI environments]
-    types: [in_progress]
+    types: [requested]
     branches: [master]
 
 permissions:
@@ -11,6 +13,7 @@ permissions:
   contents: read
   packages: read
   pages: write
+  pull-requests: read
   id-token: write
 
 concurrency:
@@ -53,107 +56,178 @@ jobs:
               await new Promise(resolve => setTimeout(resolve, 15000));
             }
 
-  documentation:
-    name: Build release documentation
+  locate-promotion:
+    name: Locate validated Master PR
     needs: environment-ready
     runs-on: ubuntu-24.04
-    container:
-      image: ghcr.io/${{ github.repository_owner }}/alamo-ci:ubuntu-24.04
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+    outputs:
+      artifact-name: ${{ steps.source.outputs.artifact-name }}
+      head-sha: ${{ steps.source.outputs.head-sha }}
+      pr-number: ${{ steps.source.outputs.pr-number }}
+      run-id: ${{ steps.source.outputs.run-id }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Resolve merged PR and successful validation run
+        id: source
+        uses: actions/github-script@v8
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
-      - uses: ./.github/actions/build-docs
-      - uses: actions/upload-artifact@v4
-        with:
-          name: documentation
-          path: docs/build/html
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const mergeSha = '${{ github.event.workflow_run.head_sha }}';
+            let pullRequest;
+            for (let attempt = 1; attempt <= 24; attempt += 1) {
+              const response =
+                await github.rest.repos.listPullRequestsAssociatedWithCommit({
+                  ...context.repo,
+                  commit_sha: mergeSha,
+                });
+              pullRequest = response.data.find(pr =>
+                pr.merged_at &&
+                pr.base.ref === 'master' &&
+                pr.merge_commit_sha === mergeSha
+              );
+              if (pullRequest) {
+                break;
+              }
+              core.info(
+                `Merged PR association is not available yet (attempt ${attempt}/24)`
+              );
+              await new Promise(resolve => setTimeout(resolve, 5000));
+            }
 
-  coverage:
-    name: Release coverage
-    needs: environment-ready
-    runs-on: ubuntu-24.04
-    container:
-      image: ghcr.io/${{ github.repository_owner }}/alamo-ci:ubuntu-24.04
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
-      - uses: ./.github/actions/coverage
-      - uses: actions/upload-artifact@v4
-        with:
-          name: coverage
-          path: cov
+            if (!pullRequest) {
+              core.setFailed(
+                `No merged PR to master is associated with ${mergeSha}`
+              );
+              return;
+            }
+            if (pullRequest.head.repo.full_name !==
+                `${context.repo.owner}/${context.repo.repo}`) {
+              core.setFailed(
+                `Master PR #${pullRequest.number} came from ` +
+                `${pullRequest.head.repo.full_name}; refusing artifact promotion`
+              );
+              return;
+            }
 
-  flamegraphs:
-    name: Release flame graphs / 2D Clang
-    needs: environment-ready
-    runs-on: ubuntu-24.04
-    container:
-      image: ghcr.io/${{ github.repository_owner }}/alamo-ci:ubuntu-24.04
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
-      - uses: ./.github/actions/regression
-        with:
-          dimension: "2"
-          compiler: clang++
-          amrex-variant: 2d-clang++
-          configure-flags: --perf
-          runtests-flags: --no-coverage --perf
-          report-name: flamegraphs-2d-clang
-      - name: Upload report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: report-flamegraphs-2d-clang
-          path: flamegraphs-2d-clang
+            const runs = await github.rest.actions.listWorkflowRuns({
+              ...context.repo,
+              workflow_id: 'master-pr.yml',
+              event: 'pull_request',
+              head_sha: pullRequest.head.sha,
+              status: 'success',
+              per_page: 100,
+            });
+            const sourceRun = runs.data.workflow_runs
+              .filter(run =>
+                run.pull_requests.some(pr => pr.number === pullRequest.number)
+              )
+              .sort((left, right) => right.id - left.id)[0];
+            if (!sourceRun) {
+              core.setFailed(
+                `No successful Master PR run found for PR #${pullRequest.number}`
+              );
+              return;
+            }
+
+            const artifactName =
+              `master-promotion-pr-${pullRequest.number}`;
+            const artifacts =
+              await github.rest.actions.listWorkflowRunArtifacts({
+                ...context.repo,
+                run_id: sourceRun.id,
+                per_page: 100,
+              });
+            const artifact = artifacts.data.artifacts.find(candidate =>
+              candidate.name === artifactName && !candidate.expired
+            );
+            if (!artifact) {
+              core.setFailed(
+                `${artifactName} is missing or expired in run ${sourceRun.id}`
+              );
+              return;
+            }
+
+            core.info(
+              `Promoting PR #${pullRequest.number} from Master PR run ` +
+              `${sourceRun.id}`
+            );
+            core.setOutput('artifact-name', artifactName);
+            core.setOutput('head-sha', pullRequest.head.sha);
+            core.setOutput('pr-number', String(pullRequest.number));
+            core.setOutput('run-id', String(sourceRun.id));
 
   assemble-pages:
-    name: Assemble master site
-    needs: [documentation, coverage, flamegraphs]
-    if: >-
-      ${{
-        always() &&
-        needs.documentation.result == 'success' &&
-        needs.coverage.result == 'success'
-      }}
+    name: Assemble master site from validated artifacts
+    needs: locate-promotion
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
-      - uses: actions/download-artifact@v4
-        with:
-          name: documentation
-          path: pages-input/docs
-      - uses: actions/download-artifact@v4
-        with:
-          name: coverage
-          path: pages-input/cov
-      - name: Download reports
-        continue-on-error: true
+
+      - name: Download Master PR promotion bundle
         uses: actions/download-artifact@v4
         with:
-          pattern: report-*
-          path: pages-input/reports
-      - name: Package versioned site
+          name: ${{ needs.locate-promotion.outputs.artifact-name }}
+          path: promotion
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ needs.locate-promotion.outputs.run-id }}
+
+      - name: Verify validated source identity
+        shell: bash
+        env:
+          EXPECTED_HEAD_SHA: ${{ needs.locate-promotion.outputs.head-sha }}
+          EXPECTED_PR_NUMBER: ${{ needs.locate-promotion.outputs.pr-number }}
+          EXPECTED_RUN_ID: ${{ needs.locate-promotion.outputs.run-id }}
+          MERGE_SHA: ${{ github.event.workflow_run.head_sha }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -eu -o pipefail
+          ACTUAL_TREE="$(git rev-parse 'HEAD^{tree}')" \
+            python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          path = Path("promotion/metadata/validation.json")
+          manifest = json.loads(path.read_text())
+          expected = {
+              "schema": 1,
+              "repository": os.environ["REPOSITORY"],
+              "pull_request": int(os.environ["EXPECTED_PR_NUMBER"]),
+              "head_repository": os.environ["REPOSITORY"],
+              "head_sha": os.environ["EXPECTED_HEAD_SHA"],
+              "workflow_run_id": int(os.environ["EXPECTED_RUN_ID"]),
+              "tested_tree": os.environ["ACTUAL_TREE"],
+          }
+          errors = [
+              f"{key}: expected {value!r}, found {manifest.get(key)!r}"
+              for key, value in expected.items()
+              if manifest.get(key) != value
+          ]
+          if errors:
+              raise SystemExit(
+                  "Master PR promotion evidence does not match the merged tree:\n"
+                  + "\n".join(errors)
+              )
+          print(
+              f"Validated PR #{manifest['pull_request']} tree "
+              f"{manifest['tested_tree']} from run "
+              f"{manifest['workflow_run_id']} for merge "
+              f"{os.environ['MERGE_SHA']}"
+          )
+          PY
+          test -d promotion/docs
+          test -d promotion/cov
+
+      - name: Package master site
         run: >-
           python3 scripts/package_pages.py
           --slug master
-          --docs pages-input/docs
-          --coverage pages-input/cov
-          --reports pages-input/reports
+          --docs promotion/docs
+          --coverage promotion/cov
+          --reports promotion/reports
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: githubpages

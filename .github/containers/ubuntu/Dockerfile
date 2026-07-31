@@ -3,6 +3,8 @@ ARG AMREX_VERSION=26.06
 FROM ${BASE_IMAGE}
 
 ARG AMREX_VERSION
+ARG CI_ENVIRONMENT_FINGERPRINT
+LABEL org.alamo.ci.environment-fingerprint="${CI_ENVIRONMENT_FINGERPRINT}"
 COPY .ci-artifacts/amrex/ /opt/amrex/
 COPY .github/containers/ubuntu/validate-amrex.sh /tmp/alamo-ci/
 RUN AMREX_VERSION="${AMREX_VERSION}" bash /tmp/alamo-ci/validate-amrex.sh \

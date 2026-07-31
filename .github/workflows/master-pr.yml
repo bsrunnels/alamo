@@ -387,12 +387,71 @@ jobs:
               exit 1
             fi
           else
-            if [ "${performance_result}" != skipped ]; then
-              echo "Fork PR performance finished unexpectedly with status: ${performance_result}" >&2
-              exit 1
-            fi
-            if [ "${pages_result}" != skipped ]; then
-              echo "Fork PR documentation finished unexpectedly with status: ${pages_result}" >&2
-              exit 1
-            fi
+            echo "Release PRs to master must originate in ${{ github.repository }}" >&2
+            exit 1
           fi
+
+      - uses: actions/checkout@v4
+
+      - name: Download validated documentation
+        uses: actions/download-artifact@v4
+        with:
+          name: documentation
+          path: master-promotion/docs
+
+      - name: Download validated coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage
+          path: master-promotion/cov
+
+      - name: Download validated reports
+        uses: actions/download-artifact@v4
+        with:
+          pattern: report-*
+          path: master-promotion/reports
+
+      - name: Record validated source identity
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -eu -o pipefail
+          mkdir -p master-promotion/metadata
+          TESTED_SHA="$(git rev-parse HEAD)" \
+          TESTED_TREE="$(git rev-parse 'HEAD^{tree}')" \
+            python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          manifest = {
+              "schema": 1,
+              "repository": os.environ["REPOSITORY"],
+              "pull_request": int(os.environ["PR_NUMBER"]),
+              "head_repository": os.environ["HEAD_REPOSITORY"],
+              "head_sha": os.environ["HEAD_SHA"],
+              "base_sha": os.environ["BASE_SHA"],
+              "tested_sha": os.environ["TESTED_SHA"],
+              "tested_tree": os.environ["TESTED_TREE"],
+              "workflow_run_id": int(os.environ["RUN_ID"]),
+              "workflow_run_attempt": int(os.environ["RUN_ATTEMPT"]),
+          }
+          path = Path("master-promotion/metadata/validation.json")
+          path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+          print(path.read_text(), end="")
+          PY
+
+      - name: Upload master promotion bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: master-promotion-pr-${{ github.event.pull_request.number }}
+          path: master-promotion
+          if-no-files-found: error
+          retention-days: 30
